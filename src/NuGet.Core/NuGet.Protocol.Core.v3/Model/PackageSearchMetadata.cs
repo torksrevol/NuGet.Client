@@ -32,6 +32,9 @@ namespace NuGet.Protocol
         [JsonProperty(PropertyName = JsonProperties.Description)]
         public string Description { get; private set; }
 
+        [JsonProperty(PropertyName = JsonProperties.ReleaseNotes)]
+        public string ReleaseNotes { get; private set; }
+
         [JsonProperty(PropertyName = JsonProperties.DownloadCount)]
         public long? DownloadCount { get; private set; }
 
@@ -50,6 +53,9 @@ namespace NuGet.Protocol
 
         [JsonProperty(PropertyName = JsonProperties.PackageId)]
         public string PackageId { get; private set; }
+
+        [JsonProperty(PropertyName = JsonProperties.GalleryDetailsUrl)]
+        public Uri GalleryDetailsUrl { get; private set; }
 
         [JsonProperty(PropertyName = JsonProperties.ProjectUrl)]
         public Uri ProjectUrl { get; private set; }

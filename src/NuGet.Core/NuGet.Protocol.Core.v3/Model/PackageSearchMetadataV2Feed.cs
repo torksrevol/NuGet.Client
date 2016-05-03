@@ -28,6 +28,8 @@ namespace NuGet.Protocol
             Tags = package.Tags;
             Title = package.Title;
             Version = package.Version;
+            ReleaseNotes = package.ReleaseNotes;
+            GalleryDetailsUrl = GetUriSafe(package.GalleryDetailsUrl);
 
             long count;
             if (long.TryParse(package.DownloadCount, out count))
@@ -82,6 +84,10 @@ namespace NuGet.Protocol
         public NuGetVersion Version { get; private set; }
 
         public Lazy<VersionInfo[]> OnDemandParsedVersions { get; private set; }
+
+        public string ReleaseNotes { get; private set; }
+
+        public Uri GalleryDetailsUrl { get; private set; }
 
         public Task<IEnumerable<VersionInfo>> GetVersionsAsync() => Task.FromResult<IEnumerable<VersionInfo>>(OnDemandParsedVersions.Value);
 

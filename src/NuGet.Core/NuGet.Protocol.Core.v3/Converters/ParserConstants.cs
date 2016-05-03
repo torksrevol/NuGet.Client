@@ -38,6 +38,7 @@ namespace NuGet.Protocol
         public const string DownloadCount = "totalDownloads";
         public const string Published = "published";
         public const string RequireLicenseAcceptance = "requireLicenseAcceptance";
+        public const string ReleaseNotes = "releaseNotes";
         public const string DependencyGroups = "dependencyGroups";
         public const string LatestVersion = "latestVersion";
         public const string TargetFramework = "targetFramework";
@@ -47,5 +48,6 @@ namespace NuGet.Protocol
         public const string Language = "language";
         public const string PackageContent = "packageContent";
         public const string Versions = "versions";
+        public const string GalleryDetailsUrl = "galleryDetailsUrl";
     }
 }

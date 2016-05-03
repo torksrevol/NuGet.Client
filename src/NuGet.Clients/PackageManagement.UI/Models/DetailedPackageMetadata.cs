@@ -29,6 +29,12 @@ namespace NuGet.PackageManagement.UI
             Tags = serverData.Tags;
             DownloadCount = downloadCount;
             Published = serverData.Published;
+            ReleaseNotes = string.IsNullOrEmpty(serverData.ReleaseNotes) ? null : serverData.ReleaseNotes;
+            GalleryDetailsUrl = serverData.GalleryDetailsUrl != null &&
+                                serverData.GalleryDetailsUrl.Host.CompareTo("www.nuget.org") == 0
+                ? serverData.GalleryDetailsUrl
+                : null;
+            Id = serverData.Identity.Id;
             DependencySets = serverData.DependencySets?
                 .Select(e => new PackageDependencySetMetadata(e))
                 ?? new PackageDependencySetMetadata[] { };
@@ -38,6 +44,12 @@ namespace NuGet.PackageManagement.UI
 
         public NuGetVersion Version { get; set; }
         public string Summary { get; set; }
+
+        public string ReleaseNotes { get; set; }
+
+        public string Id { get; set; }
+
+        public Uri GalleryDetailsUrl { get; set; }
 
         public string Description { get; set; }
 

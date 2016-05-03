@@ -53,7 +53,6 @@
     value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
-
     mimetype: application/x-microsoft.net.object.bytearray.base64
     value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
@@ -562,5 +561,11 @@ Packages installed into Website projects will not be restored during build. Cons
   </data>
   <data name="ToolTip_BlockedVersion" xml:space="preserve">
     <value>Following versions are unavailable due to allowedVersions constraint in package.config</value>
+  </data>
+  <data name="Label_ReleaseNotes" xml:space="preserve">
+    <value>Release Notes:</value>
+  </data>
+  <data name="Label_Id" xml:space="preserve">
+    <value>Id:</value>
   </data>
 </root>

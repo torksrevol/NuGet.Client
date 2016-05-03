@@ -63,6 +63,10 @@ namespace NuGet.Protocol
 
         public string Title => !string.IsNullOrEmpty(_nuspec.GetTitle()) ? _nuspec.GetTitle() : _nuspec.GetId();
 
+        public string ReleaseNotes => null;
+
+        public Uri GalleryDetailsUrl => null;
+
         public Task<IEnumerable<VersionInfo>> GetVersionsAsync() => Task.FromResult(Enumerable.Empty<VersionInfo>());
 
         /// <summary>

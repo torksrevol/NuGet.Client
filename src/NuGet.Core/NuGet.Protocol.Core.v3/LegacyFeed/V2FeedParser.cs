@@ -59,6 +59,8 @@ namespace NuGet.Protocol
         private static readonly XName _xnamePackageHashAlgorithm = XName.Get("PackageHashAlgorithm", DataServicesNS);
         private static readonly XName _xnameMinClientVersion = XName.Get("MinClientVersion", DataServicesNS);
         private static readonly XName _xnameXmlBase = XName.Get("base", Xml);
+        private static readonly XName _xnameReleaseNotes = XName.Get("ReleaseNotes", DataServicesNS);
+        private static readonly XName _xnameGalleryDetailsUrl = XName.Get("GalleryDetailsUrl", DataServicesNS);
 
         private readonly HttpSource _httpSource;
         private readonly string _baseAddress;
@@ -301,6 +303,8 @@ namespace NuGet.Protocol
             string dependencies = GetValue(properties, _xnameDependencies);
 
             string downloadCount = GetValue(properties, _xnameDownloadCount);
+            string releaseNotes = GetValue(properties, _xnameReleaseNotes);
+            string galleryDetailsUrl = GetValue(properties, _xnameGalleryDetailsUrl);
             bool requireLicenseAcceptance = GetValue(properties, _xnameRequireLicenseAcceptance) == "true";
 
             string packageHash = GetValue(properties, _xnamePackageHash);
@@ -340,7 +344,9 @@ namespace NuGet.Protocol
                 requireLicenseAcceptance, downloadUrl, downloadCount,
                 packageHash,
                 packageHashAlgorithm,
-                minClientVersion
+                minClientVersion,
+                releaseNotes,
+                galleryDetailsUrl
                 );
         }
 
