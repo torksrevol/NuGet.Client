@@ -409,7 +409,9 @@ namespace NuGet.Commands
                     {
                         foreach (var include in spec.PackOptions.IncludeExcludeFiles.Include)
                         {
-                            builder.AddFiles(basePath, include, string.Empty, fullExclude);
+                            int index = include.IndexOf("**", StringComparison.Ordinal);
+                            var targetPath = index != -1 ? include.Substring(0, index) : string.Empty;
+                            builder.AddFiles(basePath, include, targetPath, fullExclude);
                         }
                     }
 

@@ -256,7 +256,7 @@ namespace NuGet.ProjectModel
                     mappings = new Dictionary<string, IncludeExcludeFiles>();
                     foreach (var pair in rawMappings)
                     {
-                        var key = pair.Key;
+                        var key = pair.Key.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
                         var value = pair.Value;
                         if (value.Type == JTokenType.String ||
                             value.Type == JTokenType.Array)
@@ -265,7 +265,7 @@ namespace NuGet.ProjectModel
                             TryGetStringEnumerableFromJArray(value, out includeFiles);
                             var includeExcludeFiles = new IncludeExcludeFiles()
                             {
-                                Include = includeFiles?.ToList()
+                                Include = includeFiles?.Select(file=> file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)).ToList()
                             };
                             mappings.Add(key, includeExcludeFiles);
                         }

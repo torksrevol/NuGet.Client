@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
@@ -29,22 +30,22 @@ namespace NuGet.ProjectModel
             bool foundOne = false;
             if (rawInclude != null && JsonPackageSpecReader.TryGetStringEnumerableFromJArray(rawInclude, out include))
             {
-                Include = include.ToList();
+                Include = include.Select(file=> file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)).ToList();
                 foundOne = true;
             }
             if (rawExclude != null && JsonPackageSpecReader.TryGetStringEnumerableFromJArray(rawExclude, out exclude))
             {
-                Exclude = exclude.ToList();
+                Exclude = exclude.Select(file => file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)).ToList();
                 foundOne = true;
             }
             if (rawIncludeFiles != null && JsonPackageSpecReader.TryGetStringEnumerableFromJArray(rawIncludeFiles, out includeFiles))
             {
-                IncludeFiles = includeFiles.ToList();
+                IncludeFiles = includeFiles.Select(file => file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)).ToList();
                 foundOne = true;
             }
             if (rawExcludeFiles != null && JsonPackageSpecReader.TryGetStringEnumerableFromJArray(rawExcludeFiles, out excludeFiles))
             {
-                ExcludeFiles = excludeFiles.ToList();
+                ExcludeFiles = excludeFiles.Select(file => file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)).ToList();
                 foundOne = true;
             }
 

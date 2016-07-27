@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using NuGet.LibraryModel;
 using NuGet.Packaging.Core;
@@ -590,12 +591,12 @@ namespace NuGet.ProjectModel.Test
             Assert.Equal("file4", actual.PackOptions.IncludeExcludeFiles.ExcludeFiles.First());
             Assert.NotNull(actual.PackOptions.Mappings);
             Assert.Equal(1, actual.PackOptions.Mappings.Count());
-            Assert.Equal("dest/path", actual.PackOptions.Mappings.First().Key);
+            Assert.Equal("dest" + Path.DirectorySeparatorChar + "path", actual.PackOptions.Mappings.First().Key);
             Assert.Equal(1, actual.PackOptions.Mappings.First().Value.Include.Count());
             Assert.Null(actual.PackOptions.Mappings.First().Value.Exclude);
             Assert.Null(actual.PackOptions.Mappings.First().Value.IncludeFiles);
             Assert.Null(actual.PackOptions.Mappings.First().Value.ExcludeFiles);
-            Assert.Equal("./src/path", actual.PackOptions.Mappings.First().Value.Include.First());
+            Assert.Equal("." + Path.DirectorySeparatorChar + "src" + Path.DirectorySeparatorChar + "path", actual.PackOptions.Mappings.First().Value.Include.First());
         }
 
         [Fact]
@@ -636,14 +637,14 @@ namespace NuGet.ProjectModel.Test
             Assert.Equal("file4b", actual.PackOptions.IncludeExcludeFiles.ExcludeFiles.Last());
             Assert.NotNull(actual.PackOptions.Mappings);
             Assert.Equal(2, actual.PackOptions.Mappings.Count());
-            Assert.Equal("dest/path1", actual.PackOptions.Mappings.First().Key);
-            Assert.Equal("dest/path2", actual.PackOptions.Mappings.Last().Key);
+            Assert.Equal("dest" + Path.DirectorySeparatorChar + "path1", actual.PackOptions.Mappings.First().Key);
+            Assert.Equal("dest" +Path.DirectorySeparatorChar + "path2", actual.PackOptions.Mappings.Last().Key);
             Assert.Equal(2, actual.PackOptions.Mappings.First().Value.Include.Count());
             Assert.Null(actual.PackOptions.Mappings.First().Value.Exclude);
             Assert.Null(actual.PackOptions.Mappings.First().Value.IncludeFiles);
             Assert.Null(actual.PackOptions.Mappings.First().Value.ExcludeFiles);
-            Assert.Equal("./src/path1", actual.PackOptions.Mappings.First().Value.Include.First());
-            Assert.Equal("./src/path2", actual.PackOptions.Mappings.First().Value.Include.Last());
+            Assert.Equal("." +Path.DirectorySeparatorChar + "src" + Path.DirectorySeparatorChar + "path1", actual.PackOptions.Mappings.First().Value.Include.First());
+            Assert.Equal("." + Path.DirectorySeparatorChar + "src" + Path.DirectorySeparatorChar + "path2", actual.PackOptions.Mappings.First().Value.Include.Last());
             Assert.Null(actual.PackOptions.Mappings.Last().Value.Include);
             Assert.Null(actual.PackOptions.Mappings.Last().Value.Exclude);
             Assert.Null(actual.PackOptions.Mappings.Last().Value.ExcludeFiles);
