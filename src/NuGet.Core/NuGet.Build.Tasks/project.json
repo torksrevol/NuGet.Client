@@ -24,6 +24,9 @@
   "dependencies": {
     "NuGet.Commands": {
       "target": "project"
+    },
+    "NuGet.Common": {
+      "target": "project"
     }
   },
 

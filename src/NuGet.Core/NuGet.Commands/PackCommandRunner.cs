@@ -511,7 +511,7 @@ namespace NuGet.Commands
             }
         }
 
-        private static void AddDependencyGroups(IEnumerable<LibraryDependency> dependencies, NuGetFramework framework, PackageBuilder builder)
+        public static void AddDependencyGroups(IEnumerable<LibraryDependency> dependencies, NuGetFramework framework, PackageBuilder builder)
         {
             List<PackageDependency> packageDependencies = new List<PackageDependency>();
 
@@ -691,7 +691,7 @@ namespace NuGet.Commands
             return package;
         }
 
-        private PackageArchiveReader BuildPackage(PackageBuilder builder, string outputPath = null)
+        public PackageArchiveReader BuildPackage(PackageBuilder builder, string outputPath = null)
         {
             if (!String.IsNullOrEmpty(_packArgs.Version))
             {

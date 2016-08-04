@@ -1,0 +1,82 @@
+﻿<!--
+***********************************************************************************************
+NuGet.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved. 
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Load NuGet.Build.Tasks.dll, this can be overridden to use a different version with $(RestoreTaskAssemblyFile) -->
+  <PropertyGroup>
+    <NugetTaskAssemblyFile Condition="$(NugetTaskAssemblyFile) == ''">D:\nuget\NuGet.Client\src\NuGet.Core\NuGet.Build.Tasks\bin\debug\net45\NuGet.Build.Tasks.dll</NugetTaskAssemblyFile>
+  </PropertyGroup>
+  <UsingTask TaskName="NuGet.Build.Tasks.PackTask" AssemblyFile="$(NugetTaskAssemblyFile)" />
+
+  <!--
+    ============================================================
+    Restore
+    Main entry point for packing packages
+    ============================================================
+  -->
+  <Target Name="Pack" DependsOnTargets="_ObtainPackProjectFile">
+    <!-- Call restore -->
+    <PackTask PackItem="@(PackProjectInputFile)"
+              Content="@(Content)"
+              PackContent="@(PackContent)"
+              Version="$(Version)"
+              Id="$(Id)"
+              Authors="$(Authors)"
+              Owners="$(Authors)"
+              Description="$(Description)"
+              Copyright="$(Copyright)"
+              Summary="$(Summary)"
+              RequireLicenseAcceptance="$(RequireLicenseAcceptance)"
+              LicenseUrl="$(LicenseUrl)"
+              ProjectUrl="$(ProjectUrl)"
+              IconUrl="$(IconUrl)"
+              ReleaseNotes="$(ReleaseNotes)"
+              Tags="$(Tags)"
+              Properties="$(Properties)"
+              Exclude="$(Exclude)"
+              OutputPath="$(OutputPath)"
+              Configuration="$(Configuration)"
+              TargetPath="$(TargetPath)"/>
+  </Target>
+<!--
+    ============================================================
+    _LoadRestoreGraphEntryPoints
+    Find project entry points and load them into items.
+    ============================================================
+  -->
+  <Target Name="_LoadPackInputItems">
+    <!-- Allow overriding items with RestoreGraphProjectInput -->
+    <ItemGroup Condition="@(PackProjectInputFile) == ''">
+      <PackProjectInputFile Include="$(PackProjectFileInput)" />
+    </ItemGroup>
+
+    <!-- Project case -->
+    <ItemGroup Condition="$(MSBuildProjectFullPath.EndsWith('.metaproj')) != 'true' AND @(PackProjectInputFile) == ''">
+      <PackProjectInputFile Include="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    ============================================================
+    _GenerateRestoreGraph
+    Entry point for creating the project to project restore graph.
+    ============================================================
+  -->
+  <Target Name="_ObtainPackProjectFile" DependsOnTargets="_LoadPackInputItems">
+    <Message Text="Generating dg files" Importance="low" />
+    <Message Text="%(PackProjectInputFile.Identity)" Importance="low" />
+    <Message Text="%(PackProjectInputFile.FullPath)" Importance="low" />
+    <Message Text="%(PackProjectInputFile.Directory)" Importance="low" />
+    <!-- Validate -->
+    <Error Text="There are no projects to restore!" Condition="@(PackProjectInputFile) == ''"/>
+
+  </Target>
+</Project>
