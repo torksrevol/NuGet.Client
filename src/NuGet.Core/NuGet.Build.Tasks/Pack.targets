@@ -44,7 +44,8 @@ Copyright (c) .NET Foundation. All rights reserved.
               Exclude="$(Exclude)"
               OutputPath="$(OutputPath)"
               Configuration="$(Configuration)"
-              TargetPath="$(TargetPath)"/>
+              TargetPath="$(TargetPath)"
+              AssemblyName="$(AssemblyName)"/>
   </Target>
 <!--
     ============================================================

@@ -22,6 +22,7 @@ namespace NuGet.Commands
         public delegate IProjectFactory CreateProjectFactory(PackArgs packArgs, string path);
 
         private PackArgs _packArgs;
+        private PackageBuilder _packageBuilder;
         internal static readonly string SymbolsExtension = ".symbols" + NuGetConstants.PackageExtension;
         private CreateProjectFactory _createProjectFactory;
         private const string Configuration = "configuration";
@@ -62,6 +63,11 @@ namespace NuGet.Commands
         private readonly HashSet<string> _excludes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public IEnumerable<IPackageRule> Rules { get; set; }
+
+        public PackCommandRunner(PackArgs packArgs, CreateProjectFactory createProjectFactory, PackageBuilder packageBuilder) : this(packArgs, createProjectFactory)
+        {
+            this._packageBuilder = packageBuilder;
+        }
 
         public PackCommandRunner(PackArgs packArgs, CreateProjectFactory createProjectFactory)
         {
@@ -623,7 +629,7 @@ namespace NuGet.Commands
 
         private PackageArchiveReader BuildFromProjectFile(string path)
         {
-            if (String.IsNullOrEmpty(_packArgs.MsBuildDirectory.Value) || _createProjectFactory == null)
+            if ((String.IsNullOrEmpty(_packArgs.MsBuildDirectory?.Value) || _createProjectFactory == null) && _packArgs.PackTargetArgs == null)
             {
                 _packArgs.Logger.LogError(Strings.Error_CannotFindMsbuild);
                 return null;
@@ -648,7 +654,7 @@ namespace NuGet.Commands
             }
 
             // Create a builder for the main package as well as the sources/symbols package
-            PackageBuilder mainPackageBuilder = factory.CreateBuilder(_packArgs.BasePath, version, _packArgs.Suffix, buildIfNeeded: true);
+            PackageBuilder mainPackageBuilder = factory.CreateBuilder(_packArgs.BasePath, version, _packArgs.Suffix, buildIfNeeded: true, builder: this._packageBuilder);
 
             if (mainPackageBuilder == null)
             {

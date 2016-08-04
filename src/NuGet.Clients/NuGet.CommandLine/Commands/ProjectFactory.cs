@@ -184,7 +184,7 @@ namespace NuGet.CommandLine
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "We want to continue regardless of any error we encounter extracting metadata.")]
-        public Packaging.PackageBuilder CreateBuilder(string basePath, NuGetVersion version, string suffix, bool buildIfNeeded)
+        public Packaging.PackageBuilder CreateBuilder(string basePath, NuGetVersion version, string suffix, bool buildIfNeeded, Packaging.PackageBuilder builder =null)
         {
             if (buildIfNeeded)
             {
@@ -200,7 +200,10 @@ namespace NuGet.CommandLine
                         Path.GetFullPath(Path.GetDirectoryName(TargetPath))));
             }
 
-            var builder = new Packaging.PackageBuilder();
+            if (builder == null)
+            {
+                builder = new Packaging.PackageBuilder();
+            }
 
             try
             {

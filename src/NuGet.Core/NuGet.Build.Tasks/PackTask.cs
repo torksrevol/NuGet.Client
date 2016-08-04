@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -20,6 +21,8 @@ namespace NuGet.Build.Tasks
     {
 
         //TODO: Add PackageTypes
+        //TODO: Add support for Symbols
+        //TODO: Add support for Tools
         [Required]
         public ITaskItem PackItem { get; set; }
         public ITaskItem[] Content { get; set; }
@@ -41,6 +44,7 @@ namespace NuGet.Build.Tasks
         public ITaskItem Configuration { get; set; }
         public ITaskItem OutputPath { get; set; }
         public ITaskItem TargetPath { get; set; }
+        public ITaskItem AssemblyName { get; set; }
 
         public string Exclude { get; set; }
 
@@ -54,8 +58,8 @@ namespace NuGet.Build.Tasks
             var packArgs = GetPackArgs();
             var packageBuilder = GetPackageBuilder();
             ProcessJsonFile(packageBuilder, packArgs);
-            PackCommandRunner packRunner = new PackCommandRunner(packArgs, null);
-            packRunner.BuildPackage(packageBuilder);
+            PackCommandRunner packRunner = new PackCommandRunner(packArgs, MSBuildProjectFactory.ProjectCreator, packageBuilder);
+            packRunner.BuildPackage();
             return true;
         }
 
@@ -63,6 +67,14 @@ namespace NuGet.Build.Tasks
         {
             var packArgs = new PackArgs();
             packArgs.Logger = new MSBuildLogger(Log);
+            packArgs.PackTargetArgs = new MSBuildPackTargetArgs()
+            {
+                TargetPath = TargetPath?.ItemSpec,
+                Configuration = Configuration?.ItemSpec,
+                OutputPath = OutputPath?.ItemSpec,
+                AssemblyName = AssemblyName?.ItemSpec
+            };
+            
             InitCurrentDirectoryAndFileName(packArgs);
             if (Properties != null)
             {
