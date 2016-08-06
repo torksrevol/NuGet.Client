@@ -16,19 +16,27 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
   <UsingTask TaskName="NuGet.Build.Tasks.PackTask" AssemblyFile="$(NugetTaskAssemblyFile)" />
 
+  <PropertyGroup>
+    <PackageId Condition=" '$(PackageId)' == '' ">$(AssemblyName)</PackageId>
+    <PackageVersion Condition=" '$(PackageVersion)' == '' ">$(AssemblyInformationalVersion)</PackageVersion>
+    <PackageVersion Condition=" '$(PackageVersion)' == '' ">$(AssemblyVersion)</PackageVersion>
+    <PackWhenReference Condition=" '$(PackWhenReference)' == '' ">true</PackWhenReference>
+    <PackageOutputPath Condition=" '$(PackageOutputPath )' == '' ">$(TargetDir)</PackageOutputPath>
+    <IncludeContentInPack Condition="'$(IncludeContentInPack)'==''">true</IncludeContentInPack>
+  </PropertyGroup>
+  
   <!--
     ============================================================
-    Restore
+    Pack
     Main entry point for packing packages
     ============================================================
   -->
-  <Target Name="Pack" DependsOnTargets="_ObtainPackProjectFile">
-    <!-- Call restore -->
-    <PackTask PackItem="@(PackProjectInputFile)"
-              Content="@(Content)"
-              PackContent="@(PackContent)"
-              Version="$(Version)"
-              Id="$(Id)"
+  <Target Name="Pack" DependsOnTargets="_GetProjectToProjectReferences; _GetPackageFilesFromReferencedProjects">
+    <!-- Call Pack -->
+    <PackTask PackItem="$(PackProjectInputFile)"
+              PackageFiles="@(_PackageFiles)"
+              PackageVersion="$(PackageVersion)"
+              PackageId="$(PackageId)"
               Authors="$(Authors)"
               Owners="$(Authors)"
               Description="$(Description)"
@@ -45,39 +53,176 @@ Copyright (c) .NET Foundation. All rights reserved.
               OutputPath="$(OutputPath)"
               Configuration="$(Configuration)"
               TargetPath="$(TargetPath)"
-              AssemblyName="$(AssemblyName)"/>
+              AssemblyName="$(AssemblyName)"
+              ProjectReferences="@(_ProjectReferences)"
+              PackageOutputPath="$(PackageOutputPath)"
+              IncludeSymbols="$(IncludeSymbols)"
+              IsTool="$(IsTool)"/>
   </Target>
 <!--
     ============================================================
-    _LoadRestoreGraphEntryPoints
+    _LoadPackGraphEntryPoints
     Find project entry points and load them into items.
     ============================================================
   -->
   <Target Name="_LoadPackInputItems">
-    <!-- Allow overriding items with RestoreGraphProjectInput -->
-    <ItemGroup Condition="@(PackProjectInputFile) == ''">
-      <PackProjectInputFile Include="$(PackProjectFileInput)" />
-    </ItemGroup>
+    <!-- Allow overriding items with PackProjectFileInput -->
+    <PropertyGroup Condition="'$(PackProjectInputFile)' == ''">
+      <PackProjectInputFile>$(PackProjectFileInput)</PackProjectInputFile>
+    </PropertyGroup>
 
     <!-- Project case -->
-    <ItemGroup Condition="$(MSBuildProjectFullPath.EndsWith('.metaproj')) != 'true' AND @(PackProjectInputFile) == ''">
-      <PackProjectInputFile Include="$(MSBuildProjectFullPath)" />
-    </ItemGroup>
+    <PropertyGroup Condition="$(MSBuildProjectFullPath.EndsWith('.csproj')) == 'true' AND '$(PackProjectInputFile)' == ''">
+      <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
+    </PropertyGroup>
   </Target>
 
   <!--
     ============================================================
-    _GenerateRestoreGraph
-    Entry point for creating the project to project restore graph.
+    _GetProjectToProjectReferences
+    Entry point for generating the project to project references.
     ============================================================
   -->
-  <Target Name="_ObtainPackProjectFile" DependsOnTargets="_LoadPackInputItems">
-    <Message Text="Generating dg files" Importance="low" />
-    <Message Text="%(PackProjectInputFile.Identity)" Importance="low" />
-    <Message Text="%(PackProjectInputFile.FullPath)" Importance="low" />
-    <Message Text="%(PackProjectInputFile.Directory)" Importance="low" />
+  <Target Name="_GetProjectToProjectReferences" DependsOnTargets="_LoadPackInputItems">
+    
     <!-- Validate -->
-    <Error Text="There are no projects to restore!" Condition="@(PackProjectInputFile) == ''"/>
+    <Error Text="There are no projects to restore!" Condition="$(PackProjectInputFile) == ''"/>
 
+    <!-- Walk the project references for each project -->
+    <MsBuild
+        Projects="$(PackProjectInputFile)"
+        Targets="_WalkProjectToProjectReferences"
+        BuildInParallel="false"
+        Properties="
+                %(_MSBuildProjectReferenceExistent.SetConfiguration);
+                %(_MSBuildProjectReferenceExistent.SetPlatform);
+                CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileFullPath);
+                PackGraphWriteEntryPoint=true;
+                BuildProjectReferences=false;"
+        RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_ProjectReferences" />
+    </MsBuild>
+
+  </Target>
+
+  <!--
+    ============================================================
+    _WalkProjectToProjectReferences
+    Recursively walk project to project references
+    ============================================================
+  -->
+  <Target Name="_WalkProjectToProjectReferences"
+      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+      Returns="@(_ProjectReferences)">
+
+    <ItemGroup>
+      <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
+      <ValidProjectInputForPackGraph Include="@(ProjectReference)"
+          Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
+    </ItemGroup>
+
+    <!-- Project to project entry -->
+    <ItemGroup Condition = " '$(PackGraphWriteEntryPoint)' == 'false' ">
+      <_ProjectReferences
+        Include="PROJECT|$(TargetPath)|$(AssemblyName)" Condition=" $(PackWhenReference) != 'true' " />
+      <_ProjectReferences
+        Include="PACKAGE|$(PackageId)|$(PackageVersion)" Condition=" $(PackWhenReference) == 'true' " />
+    </ItemGroup>
+
+    <!-- Recurse into referenced projects -->
+    <MSBuild
+      Projects="@(ValidProjectInputForPackGraph)"
+      Targets="_WalkProjectToProjectReferences"
+      Properties="
+            %(_MSBuildProjectReferenceExistent.SetConfiguration);
+            %(_MSBuildProjectReferenceExistent.SetPlatform);
+            PackGraphWriteEntryPoint=false;
+            BuildProjectReferences=false"
+      RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_ProjectReferences" />
+    </MSBuild>
+  </Target>
+
+  <!--
+    ============================================================
+    _GetPackageFilesFromReferencedProjects
+    Entry point for generating the project to project references.
+    ============================================================
+  -->
+  <Target Name="_GetPackageFilesFromReferencedProjects" DependsOnTargets="_LoadPackInputItems">
+
+
+    <!-- Include PackageFiles and Content of the project being packed -->
+    <ItemGroup>
+      <_PackageFiles
+        Include="@(PackageFiles)" />
+      <_PackageFiles
+        Include="@(Content)" Condition=" '%(Content.Pack)' == 'true' " />
+    </ItemGroup>
+    
+    <!-- Walk the project references for each project -->
+    <MsBuild
+        Projects="$(PackProjectInputFile)"
+        Targets="_RecursivelyGetPackageFilesFromReferencedProjects"
+        BuildInParallel="false"
+        Properties="
+                %(_MSBuildProjectReferenceExistent.SetConfiguration);
+                %(_MSBuildProjectReferenceExistent.SetPlatform);
+                CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileFullPath);"
+        RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_PackageFiles" />
+    </MsBuild>
+
+  </Target>
+
+  <!--
+    ============================================================
+    _RecursivelyGetPackageFilesFromReferencedProjects
+    Recursively walk project to project references to get content files which should be packed
+    ============================================================
+  -->
+  <Target Name="_RecursivelyGetPackageFilesFromReferencedProjects"
+      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+      Returns="@(_PackageFiles)">
+
+    <ItemGroup>
+      <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
+      <ValidProjectInputForPackGraph Include="@(ProjectReference)"
+          Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
+    </ItemGroup>
+
+    <!-- Project to project entry -->
+    <!-- Include PackageFiles and Content of the project being packed -->
+    <ItemGroup>
+      <_PackageFiles
+        Include="@(PackageFiles)" Condition=" '$(PackWhenReference)' != 'true' " />
+      <_PackageFiles
+        Include="@(Content)" Condition=" %(Content.Pack) == 'true' AND '$(PackWhenReference)' != 'true' " />
+    </ItemGroup>
+
+    <!-- Recurse into referenced projects -->
+    <MSBuild
+      Projects="@(ValidProjectInputForPackGraph)"
+      Targets="_WalkProjectToProjectReferences"
+      Properties="
+            %(_MSBuildProjectReferenceExistent.SetConfiguration);
+            %(_MSBuildProjectReferenceExistent.SetPlatform);
+            PackGraphWriteEntryPoint=false;
+            BuildProjectReferences=false"
+      RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_ProjectReferences" />
+    </MSBuild>
   </Target>
 </Project>

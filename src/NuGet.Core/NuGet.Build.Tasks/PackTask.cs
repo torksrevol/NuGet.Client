@@ -14,6 +14,8 @@ using NuGet.Packaging;
 using NuGet.ProjectModel;
 using NuGet.Versioning;
 using NuGet.Frameworks;
+using NuGet.LibraryModel;
+using NuGet.Packaging.Core;
 
 namespace NuGet.Build.Tasks
 {
@@ -25,28 +27,32 @@ namespace NuGet.Build.Tasks
         //TODO: Add support for Tools
         [Required]
         public ITaskItem PackItem { get; set; }
-        public ITaskItem[] Content { get; set; }
-        public ITaskItem[] PackContent { get; set; }
-        public ITaskItem Id { get; set; }
-        public ITaskItem Version { get; set; }
-        public ITaskItem Authors { get; set; }
-        public ITaskItem Owners { get; set; }
-        public ITaskItem Description { get; set; }
-        public ITaskItem Copyright { get; set; }
-        public ITaskItem Summary { get; set; }
-        public ITaskItem RequireLicenseAcceptance { get; set; }
-        public ITaskItem LicenseUrl { get; set; }
-        public ITaskItem ProjectUrl { get; set; }
-        public ITaskItem IconUrl { get; set; }
-        public ITaskItem Tags { get; set; }
-        public ITaskItem ReleaseNotes { get; set; }
-        public ITaskItem Properties { get; set; }
-        public ITaskItem Configuration { get; set; }
-        public ITaskItem OutputPath { get; set; }
-        public ITaskItem TargetPath { get; set; }
-        public ITaskItem AssemblyName { get; set; }
-
+        public ITaskItem[] PackageFiles { get; set; }
+        public ITaskItem[] TargetFrameworks { get; set; }
+        public string PackageId { get; set; }
+        public string PackageVersion { get; set; }
+        public string Authors { get; set; }
+        public string Owners { get; set; }
+        public string Description { get; set; }
+        public string Copyright { get; set; }
+        public string Summary { get; set; }
+        public bool RequireLicenseAcceptance { get; set; }
+        public string LicenseUrl { get; set; }
+        public string ProjectUrl { get; set; }
+        public string IconUrl { get; set; }
+        public string Tags { get; set; }
+        public string ReleaseNotes { get; set; }
+        public string Properties { get; set; }
+        public string Configuration { get; set; }
+        public string OutputPath { get; set; }
+        public string TargetPath { get; set; }
+        public string AssemblyName { get; set; }
         public string Exclude { get; set; }
+        public string PackageOutputPath { get; set; }
+        public bool IsTool { get; set; }
+        public bool IncludeSymbols { get; set; }
+        public ITaskItem[] ProjectReferences { get; set; }
+        
 
 
         
@@ -56,7 +62,7 @@ namespace NuGet.Build.Tasks
             System.Diagnostics.Debugger.Launch();
 #endif
             var packArgs = GetPackArgs();
-            var packageBuilder = GetPackageBuilder();
+            var packageBuilder = GetPackageBuilder(packArgs);
             ProcessJsonFile(packageBuilder, packArgs);
             PackCommandRunner packRunner = new PackCommandRunner(packArgs, MSBuildProjectFactory.ProjectCreator, packageBuilder);
             packRunner.BuildPackage();
@@ -67,18 +73,21 @@ namespace NuGet.Build.Tasks
         {
             var packArgs = new PackArgs();
             packArgs.Logger = new MSBuildLogger(Log);
+            packArgs.OutputDirectory = PackageOutputPath;
+            packArgs.Tool = IsTool;
+            packArgs.Symbols = IncludeSymbols;
             packArgs.PackTargetArgs = new MSBuildPackTargetArgs()
             {
-                TargetPath = TargetPath?.ItemSpec,
-                Configuration = Configuration?.ItemSpec,
-                OutputPath = OutputPath?.ItemSpec,
-                AssemblyName = AssemblyName?.ItemSpec
+                TargetPath = TargetPath,
+                Configuration = Configuration,
+                OutputPath = OutputPath,
+                AssemblyName = AssemblyName
             };
             
             InitCurrentDirectoryAndFileName(packArgs);
             if (Properties != null)
             {
-                foreach (var property in Properties.ItemSpec.Split(';'))
+                foreach (var property in Properties.Split(';'))
                 {
                     int index = property.IndexOf('=');
                     if (index > 0 && index < property.Length - 1)
@@ -93,16 +102,16 @@ namespace NuGet.Build.Tasks
             return packArgs;
         }
 
-        private PackageBuilder GetPackageBuilder()
+        private PackageBuilder GetPackageBuilder(PackArgs packArgs)
         {
             PackageBuilder builder = new PackageBuilder();
-            builder.Id = Id.ItemSpec;
-            if (Version != null)
+            builder.Id = PackageId;
+            if (PackageVersion != null)
             {
                 NuGetVersion version;
-                if (!NuGetVersion.TryParse(Version.ItemSpec, out version))
+                if (!NuGetVersion.TryParse(PackageVersion, out version))
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, "Version string specified '{0}' is invalid.", Version.ItemSpec));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, "PackageVersion string specified '{0}' is invalid.", PackageVersion));
                 }
                 builder.Version = version;
             }
@@ -110,32 +119,71 @@ namespace NuGet.Build.Tasks
             {
                 builder.Version = new NuGetVersion("1.0.0");
             }
-            builder.Owners.AddRange(Owners?.ItemSpec.Split(new char[] {',', ';'}, StringSplitOptions.RemoveEmptyEntries));
-            builder.Authors.AddRange(Authors?.ItemSpec.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
-            builder.Description = Description?.ItemSpec;
-            builder.Copyright = Copyright?.ItemSpec;
-            builder.Summary = Summary?.ItemSpec;
-            builder.ReleaseNotes = ReleaseNotes?.ItemSpec;
-            builder.Tags.AddRange(Tags?.ItemSpec.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            builder.Owners.AddRange(Owners?.Split(new char[] {',', ';'}, StringSplitOptions.RemoveEmptyEntries));
+            builder.Authors.AddRange(Authors?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            builder.Description = Description;
+            builder.Copyright = Copyright;
+            builder.Summary = Summary;
+            builder.ReleaseNotes = ReleaseNotes;
+            builder.Tags.AddRange(Tags?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
             Uri tempUri;
-            if (Uri.TryCreate(LicenseUrl?.ItemSpec, UriKind.Absolute, out tempUri))
+            if (Uri.TryCreate(LicenseUrl, UriKind.Absolute, out tempUri))
             {
                 builder.LicenseUrl = tempUri;
             }
-            if (Uri.TryCreate(ProjectUrl?.ItemSpec, UriKind.Absolute, out tempUri))
+            if (Uri.TryCreate(ProjectUrl, UriKind.Absolute, out tempUri))
             {
                 builder.ProjectUrl = tempUri;
             }
-            if (Uri.TryCreate(IconUrl?.ItemSpec, UriKind.Absolute, out tempUri))
+            if (Uri.TryCreate(IconUrl, UriKind.Absolute, out tempUri))
             {
                 builder.IconUrl = tempUri;
             }
-            bool requireLicenseAcceptance;
-            Boolean.TryParse(RequireLicenseAcceptance?.ItemSpec, out requireLicenseAcceptance);
-            builder.RequireLicenseAcceptance = requireLicenseAcceptance;
+            builder.RequireLicenseAcceptance = RequireLicenseAcceptance;
+            ParseProjectToProjectReferences(builder, packArgs);
             return builder;
         }
 
+        private void ParseProjectToProjectReferences(PackageBuilder packageBuilder, PackArgs packArgs)
+        {
+            var dependencies = new List<PackageDependency>();
+            var projectReferences = new List<ProjectToProjectReference>();
+            if (ProjectReferences != null)
+            {
+                foreach (var p2pReference in ProjectReferences)
+                {
+                    var referenceString = p2pReference.ItemSpec;
+                    string[] param = referenceString.Split(new char[] {'|'}, StringSplitOptions.RemoveEmptyEntries);
+                    if (param[0] == "PROJECT")
+                    {
+                        // This is a project reference, and the DLL should be copied over to lib.
+                        projectReferences.Add(new ProjectToProjectReference()
+                        {
+                            TargetPath = param[1],
+                            AssemblyName = param[2]
+                        });
+                    }
+                    else if (param[0] == "PACKAGE")
+                    {
+                        // This is to be treated as a nupkg dependency, add as library dependency.
+                        var packageId = param[1];
+
+                        //TODO: Do the work to get the version from AssemblyInfo.cs
+
+                        var version = "1.0.0";
+                        if (param.Count() == 3)
+                        {
+                            version = param[2];
+                        }
+                        var packageDependency = new PackageDependency(packageId, VersionRange.Parse(version));
+                        dependencies.Add(packageDependency);
+                    }
+                }
+
+                packageBuilder.DependencyGroups.Add(new PackageDependencyGroup(NuGetFramework.AnyFramework, dependencies));
+                packArgs.PackTargetArgs.ProjectReferences = projectReferences;
+            }
+        }
         private void InitCurrentDirectoryAndFileName(PackArgs packArgs)
         {
             if (PackItem == null)

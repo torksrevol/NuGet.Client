@@ -11,5 +11,17 @@ namespace NuGet.Commands
         public string AssemblyName { get; set; }
         public string OutputPath { get; set; }
         public string Configuration { get; set; }
+        public IEnumerable<ProjectToProjectReference>  ProjectReferences { get; set; }
+
+        public MSBuildPackTargetArgs()
+        {
+            ProjectReferences = new List<ProjectToProjectReference>();
+        }
+    }
+
+    public struct ProjectToProjectReference
+    {
+        public string AssemblyName { get; set; }
+        public string TargetPath { get; set; }
     }
 }
