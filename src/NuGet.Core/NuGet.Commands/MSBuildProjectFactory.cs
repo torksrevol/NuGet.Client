@@ -94,7 +94,9 @@ namespace NuGet.Commands
             // Add output files
             AddOutputFiles(builder);
 
+
             // Add content files if there are any. They could come from a project or nuspec file
+            AddContentFiles(builder);
             //ApplyAction(p => p.AddFiles(builder, ContentItemType, ContentFolder));
 
             // Add sources if this is a symbol package
@@ -214,6 +216,25 @@ namespace NuGet.Commands
                     IEnumerable<string> referencedFilesInOwnerOutputDirectory = GetFiles(ownerProjectOutputDirectory,
                         targetFileName, allowedExtensions, SearchOption.AllDirectories);
                     outputFiles.AddRange(referencedFilesInOwnerOutputDirectory);
+                }
+            }
+        }
+
+        private void AddContentFiles(PackageBuilder builder)
+        {
+            foreach (var sourcePath in PackTargetArgs.ContentFiles.Keys)
+            {
+                var listOfTargetPaths = PackTargetArgs.ContentFiles[sourcePath];
+                foreach (var targetPath in listOfTargetPaths)
+                {
+                    string target = targetPath;
+                    target = string.IsNullOrEmpty(targetPath) ? ContentFolder : targetPath;
+                    var packageFile = new PhysicalPackageFile()
+                    {
+                        SourcePath = sourcePath,
+                        TargetPath = Path.Combine(target, Path.GetFileName(sourcePath))
+                    };
+                    AddFileToBuilder(builder, packageFile);
                 }
             }
         }

@@ -24,6 +24,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PackageOutputPath Condition=" '$(PackageOutputPath )' == '' ">$(TargetDir)</PackageOutputPath>
     <IncludeContentInPack Condition="'$(IncludeContentInPack)'==''">true</IncludeContentInPack>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageFiles Include="@(Content)" Condition="'$(IncludeContentInPack)'=='true'" />
+  </ItemGroup>
   
   <!--
     ============================================================
@@ -127,7 +130,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Project to project entry -->
     <ItemGroup Condition = " '$(PackGraphWriteEntryPoint)' == 'false' ">
       <_ProjectReferences
-        Include="PROJECT|$(TargetPath)|$(AssemblyName)" Condition=" $(PackWhenReference) != 'true' " />
+        Include="PROJECT|$(TargetPath)|$(AssemblyName)|$(MSBuildProjectFullPath)" Condition=" $(PackWhenReference) != 'true' " />
       <_ProjectReferences
         Include="PACKAGE|$(PackageId)|$(PackageVersion)" Condition=" $(PackWhenReference) == 'true' " />
     </ItemGroup>
@@ -156,6 +159,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
   -->
   <Target Name="_GetPackageFilesFromReferencedProjects" DependsOnTargets="_LoadPackInputItems">
+    <Message Text="Package File Entry Point : $(PackProjectInputFile)" Importance="High"/>
 
 
     <!-- Include PackageFiles and Content of the project being packed -->
@@ -194,6 +198,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DependsOnTargets="_SplitProjectReferencesByFileExistence"
       Returns="@(_PackageFiles)">
 
+    <Message Text="Currently in project : $(MSBuildProjectFullPath)" Importance="High"/>
     <ItemGroup>
       <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
       <ValidProjectInputForPackGraph Include="@(ProjectReference)"
@@ -206,23 +211,21 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_PackageFiles
         Include="@(PackageFiles)" Condition=" '$(PackWhenReference)' != 'true' " />
       <_PackageFiles
-        Include="@(Content)" Condition=" %(Content.Pack) == 'true' AND '$(PackWhenReference)' != 'true' " />
+        Include="@(Content)" Condition=" %(Content.Pack) != 'false' AND '$(PackWhenReference)' != 'true' " />
     </ItemGroup>
 
     <!-- Recurse into referenced projects -->
     <MSBuild
       Projects="@(ValidProjectInputForPackGraph)"
-      Targets="_WalkProjectToProjectReferences"
+      Targets="_RecursivelyGetPackageFilesFromReferencedProjects"
       Properties="
             %(_MSBuildProjectReferenceExistent.SetConfiguration);
-            %(_MSBuildProjectReferenceExistent.SetPlatform);
-            PackGraphWriteEntryPoint=false;
-            BuildProjectReferences=false"
+            %(_MSBuildProjectReferenceExistent.SetPlatform);"
       RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
 
       <Output
           TaskParameter="TargetOutputs"
-          ItemName="_ProjectReferences" />
+          ItemName="_PackageFiles" />
     </MSBuild>
   </Target>
 </Project>

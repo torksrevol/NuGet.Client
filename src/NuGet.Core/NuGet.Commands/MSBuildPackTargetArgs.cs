@@ -12,6 +12,7 @@ namespace NuGet.Commands
         public string OutputPath { get; set; }
         public string Configuration { get; set; }
         public IEnumerable<ProjectToProjectReference>  ProjectReferences { get; set; }
+        public Dictionary<string, HashSet<string>> ContentFiles { get; set; } 
 
         public MSBuildPackTargetArgs()
         {

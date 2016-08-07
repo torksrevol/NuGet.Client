@@ -25,6 +25,7 @@ namespace NuGet.Build.Tasks
         //TODO: Add PackageTypes
         //TODO: Add support for Symbols
         //TODO: Add support for Tools
+        //TODO: Add support for Repository
         [Required]
         public ITaskItem PackItem { get; set; }
         public ITaskItem[] PackageFiles { get; set; }
@@ -63,7 +64,10 @@ namespace NuGet.Build.Tasks
 #endif
             var packArgs = GetPackArgs();
             var packageBuilder = GetPackageBuilder(packArgs);
-            ProcessJsonFile(packageBuilder, packArgs);
+            var contentFiles = ProcessContentToIncludeInPackage();
+            packArgs.PackTargetArgs.ContentFiles = contentFiles;
+            ProcessJsonFile(packageBuilder, packArgs.CurrentDirectory,
+                Path.GetFileName(packArgs.Path), isHostProject:true);
             PackCommandRunner packRunner = new PackCommandRunner(packArgs, MSBuildProjectFactory.ProjectCreator, packageBuilder);
             packRunner.BuildPackage();
             return true;
@@ -162,6 +166,8 @@ namespace NuGet.Build.Tasks
                             TargetPath = param[1],
                             AssemblyName = param[2]
                         });
+                        string projectPath = param[3];
+                        //ProcessJsonFile(packageBuilder, Path.GetDirectoryName(projectPath), Path.GetFileName(projectPath), isHostProject:false);
                     }
                     else if (param[0] == "PACKAGE")
                     {
@@ -205,10 +211,9 @@ namespace NuGet.Build.Tasks
             }
         }
 
-        private void ProcessJsonFile(PackageBuilder packageBuilder, PackArgs packArgs)
+        private void ProcessJsonFile(PackageBuilder packageBuilder, string currentDirectory, string projectFileName, bool isHostProject)
         {
-            string path = ProjectJsonPathUtilities.GetProjectConfigPath(packArgs.CurrentDirectory,
-                Path.GetFileName(packArgs.Path));
+            string path = ProjectJsonPathUtilities.GetProjectConfigPath(currentDirectory, projectFileName);
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
             {
                 var spec = JsonPackageSpecReader.GetPackageSpec(stream, packageBuilder.Id, path, null);
@@ -220,8 +225,10 @@ namespace NuGet.Build.Tasks
                         {
                             throw new Exception(String.Format(CultureInfo.CurrentCulture, NuGet.Commands.Strings.Error_InvalidTargetFramework, framework.FrameworkName));
                         }
-
-                        packageBuilder.TargetFrameworks.Add(framework.FrameworkName);
+                        if (isHostProject)
+                        {
+                            packageBuilder.TargetFrameworks.Add(framework.FrameworkName);
+                        }
                         PackCommandRunner.AddDependencyGroups(framework.Dependencies.Concat(spec.Dependencies), framework.FrameworkName, packageBuilder);
                     }
                 }
@@ -233,6 +240,54 @@ namespace NuGet.Build.Tasks
                     }
                 }
             }
+        }
+
+        private Dictionary<string, HashSet<string>> ProcessContentToIncludeInPackage()
+        {
+            // This maps from source path on disk to target path inside the nupkg.
+            var fileModel = new Dictionary<string, HashSet<string>>();
+            foreach (var packageFile in PackageFiles)
+            {
+                string sourcePath = packageFile.GetMetadata("FullPath");
+                string targetPath = string.Empty;
+                var customMetadata = packageFile.CloneCustomMetadata();
+                if (customMetadata.Contains("MSBuildSourceProjectFile"))
+                {
+                    string sourceProjectFile = packageFile.GetMetadata("MSBuildSourceProjectFile");
+                    string identity = packageFile.GetMetadata("Identity");
+                    sourcePath = Path.Combine(sourceProjectFile.Replace(Path.GetFileName(sourceProjectFile), string.Empty), identity);
+                }
+                if (customMetadata.Contains("Pack"))
+                {
+                    string shouldPack = packageFile.GetMetadata("Pack");
+                    bool pack;
+                    Boolean.TryParse(shouldPack, out pack);
+                    if (!pack)
+                    {
+                        continue;
+                    }
+                }
+                if (customMetadata.Contains("PackagePath"))
+                {
+                    targetPath = packageFile.GetMetadata("PackagePath");
+                }
+
+                if (fileModel.ContainsKey(sourcePath))
+                {
+                    var setOfTargetPaths = fileModel[sourcePath];
+                    if (!setOfTargetPaths.Contains(targetPath))
+                    {
+                        setOfTargetPaths.Add(targetPath);
+                    }
+                }
+                else
+                {
+                    var setOfTargetPaths = new HashSet<string>();
+                    setOfTargetPaths.Add(targetPath);
+                    fileModel.Add(sourcePath, setOfTargetPaths);
+                }
+            }
+            return fileModel;
         }
     }
 }
