@@ -519,7 +519,7 @@ namespace NuGet.Commands
 
         public static void AddDependencyGroups(IEnumerable<LibraryDependency> dependencies, NuGetFramework framework, PackageBuilder builder)
         {
-            List<PackageDependency> packageDependencies = new List<PackageDependency>();
+            ISet<PackageDependency> packageDependencies = new HashSet<PackageDependency>();
 
             foreach (var dependency in dependencies)
             {
@@ -579,7 +579,34 @@ namespace NuGet.Commands
                 }
             }
 
-            builder.DependencyGroups.Add(new PackageDependencyGroup(framework, packageDependencies));
+            var dependencyGroup = builder.DependencyGroups.FirstOrDefault(r => r.TargetFramework.Equals(framework));
+            if (dependencyGroup != null)
+            {
+                foreach (var packageDependency in packageDependencies)
+                {
+                    var matchingDependency = dependencyGroup.Packages.Single(r => r.Id == packageDependency.Id);
+                    if (matchingDependency != null)
+                    {
+                        VersionRange newVersionRange = VersionRange.CommonSubSet(new VersionRange[]
+                        {
+                            matchingDependency.VersionRange, packageDependency.VersionRange
+                        });
+                        if (newVersionRange != VersionRange.None)
+                        {
+                            dependencyGroup.Packages.Remove(matchingDependency);
+                            dependencyGroup.Packages.Add(new PackageDependency(matchingDependency.Id, newVersionRange));
+                        }
+                        else
+                        {
+                            throw new Exception("Your package version constraints are messed up.");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                builder.DependencyGroups.Add(new PackageDependencyGroup(framework, packageDependencies));
+            }
         }
 
         private PackageArchiveReader BuildFromNuspec(string path)

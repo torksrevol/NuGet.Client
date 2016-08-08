@@ -150,7 +150,7 @@ namespace NuGet.Build.Tasks
 
         private void ParseProjectToProjectReferences(PackageBuilder packageBuilder, PackArgs packArgs)
         {
-            var dependencies = new List<PackageDependency>();
+            var dependencies = new HashSet<PackageDependency>();
             var projectReferences = new List<ProjectToProjectReference>();
             if (ProjectReferences != null)
             {
@@ -167,7 +167,7 @@ namespace NuGet.Build.Tasks
                             AssemblyName = param[2]
                         });
                         string projectPath = param[3];
-                        //ProcessJsonFile(packageBuilder, Path.GetDirectoryName(projectPath), Path.GetFileName(projectPath), isHostProject:false);
+                        ProcessJsonFile(packageBuilder, Path.GetDirectoryName(projectPath), Path.GetFileName(projectPath), isHostProject:false);
                     }
                     else if (param[0] == "PACKAGE")
                     {

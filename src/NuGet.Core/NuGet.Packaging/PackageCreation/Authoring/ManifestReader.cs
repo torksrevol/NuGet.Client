@@ -277,10 +277,11 @@ namespace NuGet.Packaging
             }
         }
 
-        private static List<PackageDependency> ReadDependencies(XElement containerElement)
+        private static ISet<PackageDependency> ReadDependencies(XElement containerElement)
         {
             // element is <dependency>
-            return (from element in containerElement.ElementsNoNamespace("dependency")
+
+            var dependency = (from element in containerElement.ElementsNoNamespace("dependency")
                     let idElement = element.Attribute("id")
                     where idElement != null && !String.IsNullOrEmpty(idElement.Value)
                     let elementVersion = element.GetOptionalAttributeValue("version")
@@ -291,6 +292,7 @@ namespace NuGet.Packaging
                         element.GetOptionalAttributeValue("include")?.Trim()?.Split(',').Select(a => a.Trim()).ToArray(),
                         element.GetOptionalAttributeValue("exclude")?.Trim()?.Split(',').Select(a => a.Trim()).ToArray()
                     )).ToList();
+            return new HashSet<PackageDependency>(dependency);
         }
 
         private static List<ManifestFile> ReadFilesList(XElement xElement)

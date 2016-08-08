@@ -879,7 +879,7 @@ namespace NuGet.CommandLine
                         var i = 0;
                         foreach (var group in builder.DependencyGroups.ToList())
                         {
-                            List<Packaging.Core.PackageDependency> newPackagesList = new List<Packaging.Core.PackageDependency>(group.Packages);
+                            ISet<Packaging.Core.PackageDependency> newPackagesList = new HashSet<Packaging.Core.PackageDependency>(group.Packages);
                             foreach (var dependency in dependencies)
                             {
                                 if (!newPackagesList.Contains(dependency.Value))
@@ -898,7 +898,7 @@ namespace NuGet.CommandLine
                     }
                     else
                     {
-                        builder.DependencyGroups.Add(new PackageDependencyGroup(NuGetFramework.AnyFramework, dependencies.Values));
+                        builder.DependencyGroups.Add(new PackageDependencyGroup(NuGetFramework.AnyFramework, new HashSet<Packaging.Core.PackageDependency>(dependencies.Values)));
                     }
                 }
             }
@@ -909,7 +909,7 @@ namespace NuGet.CommandLine
                 builder.DependencyGroups.Clear();
 
                 // REVIEW: IS NuGetFramework.AnyFramework correct?
-                builder.DependencyGroups.Add(new PackageDependencyGroup(NuGetFramework.AnyFramework, dependencies.Values));
+                builder.DependencyGroups.Add(new PackageDependencyGroup(NuGetFramework.AnyFramework, new HashSet<Packaging.Core.PackageDependency>(dependencies.Values)));
             }
         }
 
