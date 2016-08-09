@@ -136,6 +136,9 @@ namespace NuGet.Packaging
                 case "contentFiles":
                     manifestMetadata.ContentFiles = ReadContentFiles(element);
                     break;
+                case "repository":
+                    manifestMetadata.Repository = ReadRepository(element);
+                    break;
             }
         }
 
@@ -325,6 +328,29 @@ namespace NuGet.Packaging
                     }));
             }
             return files;
+        }
+
+        private static RepositoryMetadata ReadRepository(XElement element)
+        {
+            var repositoryType = element.Attribute("type");
+            var repositoryUrl = element.Attribute("url");
+            var repository = new RepositoryMetadata();
+            if (!string.IsNullOrEmpty(repositoryType?.Value))
+            {
+                repository.Type = repositoryType.Value;
+            }
+            if (!string.IsNullOrEmpty(repositoryUrl?.Value))
+            {
+                repository.Url = repositoryUrl.Value;
+            }
+            if (string.IsNullOrEmpty(repository.Type) && string.IsNullOrEmpty(repository.Type))
+            {
+                return null;
+            }
+            else
+            {
+                return repository;
+            }
         }
     }
 }

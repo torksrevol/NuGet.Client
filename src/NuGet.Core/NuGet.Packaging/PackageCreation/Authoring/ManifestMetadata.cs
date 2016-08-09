@@ -55,6 +55,7 @@ namespace NuGet.Packaging
             MinClientVersionString = copy.MinClientVersion?.ToString();
             ContentFiles = copy.ContentFiles;
             DevelopmentDependency = copy.DevelopmentDependency;
+            Repository = copy.Repository;
         }
 
         [ManifestVersion(5)]
@@ -169,6 +170,8 @@ namespace NuGet.Packaging
         public string Tags { get; set; }
 
         public bool Serviceable { get; set; }
+
+        public RepositoryMetadata Repository { get; set; }
 
         private IEnumerable<PackageDependencyGroup> _dependencyGroups = new List<PackageDependencyGroup>();
         public IEnumerable<PackageDependencyGroup> DependencyGroups

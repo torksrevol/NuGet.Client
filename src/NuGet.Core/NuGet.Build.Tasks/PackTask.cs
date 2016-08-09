@@ -17,11 +17,8 @@ namespace NuGet.Build.Tasks
 {
     public class PackTask : Microsoft.Build.Utilities.Task
     {
-
-        //TODO: Add PackageTypes
         //TODO: Add support for Symbols
         //TODO: Add support for Tools
-        //TODO: Add support for Repository
         [Required]
         public ITaskItem PackItem { get; set; }
         public ITaskItem[] PackageFiles { get; set; }
@@ -49,6 +46,8 @@ namespace NuGet.Build.Tasks
         public string PackageOutputPath { get; set; }
         public bool IsTool { get; set; }
         public bool IncludeSymbols { get; set; }
+        public string RepositoryUrl { get; set; }
+        public string RepositoryType { get; set; }
         public ITaskItem[] ProjectReferences { get; set; }
         
 
@@ -164,6 +163,10 @@ namespace NuGet.Build.Tasks
                 builder.IconUrl = tempUri;
             }
             builder.RequireLicenseAcceptance = RequireLicenseAcceptance;
+            if (!string.IsNullOrEmpty(RepositoryUrl) || !string.IsNullOrEmpty(RepositoryType))
+            {
+                builder.Repository = new RepositoryMetadata(RepositoryType, RepositoryUrl);
+            }
             builder.PackageTypes = ParsePackageTypes();
             ParseProjectToProjectReferences(builder, packArgs);
             return builder;

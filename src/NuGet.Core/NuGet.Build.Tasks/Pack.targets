@@ -63,7 +63,9 @@ Copyright (c) .NET Foundation. All rights reserved.
               PackageOutputPath="$(PackageOutputPath)"
               IncludeSymbols="$(IncludeSymbols)"
               PackageTypes="@(PackageType)"
-              IsTool="$(IsTool)"/>
+              IsTool="$(IsTool)"
+              RepositoryUrl="$(Repository)"
+              RepositoryType="$(RepositoryType)"/>
   </Target>
 
   <Target Name="_GetTargetPaths">
