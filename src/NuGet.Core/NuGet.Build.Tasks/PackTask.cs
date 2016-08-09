@@ -1,21 +1,16 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using NuGet.Commands;
 using NuGet.Common;
 using NuGet.Packaging;
 using NuGet.ProjectModel;
 using NuGet.Versioning;
 using NuGet.Frameworks;
-using NuGet.LibraryModel;
 using NuGet.Packaging.Core;
 
 namespace NuGet.Build.Tasks
@@ -276,26 +271,15 @@ namespace NuGet.Build.Tasks
             var fileModel = new Dictionary<string, HashSet<string>>();
             if (PackageFiles != null)
             {
+                var excludeFiles = CalculateFilesToExcludeInPack();
                 foreach (var packageFile in PackageFiles)
                 {
-                    string sourcePath = packageFile.GetMetadata("FullPath");
                     string targetPath = string.Empty;
                     var customMetadata = packageFile.CloneCustomMetadata();
-                    if (customMetadata.Contains("MSBuildSourceProjectFile"))
+                    var sourcePath = GetSourcePath(packageFile, customMetadata);
+                    if (excludeFiles.Contains(sourcePath))
                     {
-                        string sourceProjectFile = packageFile.GetMetadata("MSBuildSourceProjectFile");
-                        string identity = packageFile.GetMetadata("Identity");
-                        sourcePath = Path.Combine(sourceProjectFile.Replace(Path.GetFileName(sourceProjectFile), string.Empty), identity);
-                    }
-                    if (customMetadata.Contains("Pack"))
-                    {
-                        string shouldPack = packageFile.GetMetadata("Pack");
-                        bool pack;
-                        Boolean.TryParse(shouldPack, out pack);
-                        if (!pack)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
                     if (customMetadata.Contains("PackagePath"))
                     {
@@ -320,6 +304,45 @@ namespace NuGet.Build.Tasks
             }
 
             return fileModel;
+        }
+
+        private string GetSourcePath(ITaskItem packageFile, IDictionary customMetadata)
+        {
+            string sourcePath = packageFile.GetMetadata("FullPath");
+            if (customMetadata.Contains("MSBuildSourceProjectFile"))
+            {
+                string sourceProjectFile = packageFile.GetMetadata("MSBuildSourceProjectFile");
+                string identity = packageFile.GetMetadata("Identity");
+                sourcePath = Path.Combine(sourceProjectFile.Replace(Path.GetFileName(sourceProjectFile), string.Empty), identity);
+            }
+            return Path.GetFullPath(sourcePath);
+        }
+
+        private ISet<string> CalculateFilesToExcludeInPack()
+        {
+            var excludeFiles = new HashSet<string>();
+            foreach (var file in PackageFiles)
+            {
+                var customMetadata = file.CloneCustomMetadata();
+                string sourcePath = GetSourcePath(file,  customMetadata);
+                if (ExcludeInPack(file, customMetadata))
+                {
+                    excludeFiles.Add(sourcePath);
+                }
+            }
+            return excludeFiles;
+        }
+
+        private bool ExcludeInPack(ITaskItem packageFile, IDictionary customMetadata)
+        {
+            if (customMetadata.Contains("Pack"))
+            {
+                string shouldPack = packageFile.GetMetadata("Pack");
+                bool pack;
+                Boolean.TryParse(shouldPack, out pack);
+                return !pack;
+            }
+            return false;
         }
     }
 }
