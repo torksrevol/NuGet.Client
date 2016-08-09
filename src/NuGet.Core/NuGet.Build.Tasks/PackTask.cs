@@ -26,6 +26,7 @@ namespace NuGet.Build.Tasks
         public ITaskItem PackItem { get; set; }
         public ITaskItem[] PackageFiles { get; set; }
         public ITaskItem[] TargetFrameworks { get; set; }
+        public ITaskItem[] PackageTypes { get; set; }
         public string PackageId { get; set; }
         public string PackageVersion { get; set; }
         public string Authors { get; set; }
@@ -163,8 +164,30 @@ namespace NuGet.Build.Tasks
                 builder.IconUrl = tempUri;
             }
             builder.RequireLicenseAcceptance = RequireLicenseAcceptance;
+            builder.PackageTypes = ParsePackageTypes();
             ParseProjectToProjectReferences(builder, packArgs);
             return builder;
+        }
+
+        private ICollection<PackageType> ParsePackageTypes()
+        {
+            var listOfPackageTypes = new List<PackageType>();
+            if (PackageTypes != null)
+            {
+                foreach (var packageType in PackageTypes)
+                {
+                    var customMetadata = packageType.CloneCustomMetadata();
+                    string typeName = packageType.ItemSpec;
+                    var version = PackageType.EmptyVersion;
+                    if (customMetadata.Contains("Version"))
+                    {
+                        string versionString = packageType.GetMetadata("Version");
+                        Version.TryParse(versionString, out version);
+                    }
+                    listOfPackageTypes.Add(new PackageType(typeName, version));
+                }
+            }
+            return listOfPackageTypes;
         }
 
         private void ParseProjectToProjectReferences(PackageBuilder packageBuilder, PackArgs packArgs)

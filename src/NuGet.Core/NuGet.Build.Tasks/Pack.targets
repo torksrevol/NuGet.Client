@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
               ProjectReferences="@(_ProjectReferences)"
               PackageOutputPath="$(PackageOutputPath)"
               IncludeSymbols="$(IncludeSymbols)"
+              PackageTypes="@(PackageType)"
               IsTool="$(IsTool)"/>
   </Target>
 
