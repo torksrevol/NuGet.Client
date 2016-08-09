@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -46,7 +47,7 @@ namespace NuGet.Build.Tasks
         public string Properties { get; set; }
         public string Configuration { get; set; }
         public string OutputPath { get; set; }
-        public string TargetPath { get; set; }
+        public string[] TargetPath { get; set; }
         public string AssemblyName { get; set; }
         public string Exclude { get; set; }
         public string PackageOutputPath { get; set; }
@@ -87,6 +88,7 @@ namespace NuGet.Build.Tasks
                 OutputPath = OutputPath,
                 AssemblyName = AssemblyName
             };
+            packArgs.PackTargetArgs.TargetFrameworks = ParseFrameworks();
             
             InitCurrentDirectoryAndFileName(packArgs);
             if (Properties != null)
@@ -106,6 +108,16 @@ namespace NuGet.Build.Tasks
             return packArgs;
         }
 
+        private ISet<NuGetFramework> ParseFrameworks()
+        {
+            var nugetFrameworks = new HashSet<NuGetFramework>();
+            if (TargetFrameworks != null)
+            {
+                nugetFrameworks = new HashSet<NuGetFramework>(TargetFrameworks.Select(t => NuGetFramework.Parse(t.ItemSpec)));
+            }
+            return nugetFrameworks;
+        } 
+
         private PackageBuilder GetPackageBuilder(PackArgs packArgs)
         {
             PackageBuilder builder = new PackageBuilder();
@@ -123,13 +135,25 @@ namespace NuGet.Build.Tasks
             {
                 builder.Version = new NuGetVersion("1.0.0");
             }
-            builder.Owners.AddRange(Owners?.Split(new char[] {',', ';'}, StringSplitOptions.RemoveEmptyEntries));
-            builder.Authors.AddRange(Authors?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            if (Owners != null)
+            {
+                builder.Owners.AddRange(Owners?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            if (Authors != null)
+            {
+                builder.Authors.AddRange(Authors?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            if (Tags != null)
+            {
+                builder.Tags.AddRange(Tags?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
             builder.Description = Description;
             builder.Copyright = Copyright;
             builder.Summary = Summary;
             builder.ReleaseNotes = ReleaseNotes;
-            builder.Tags.AddRange(Tags?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
             Uri tempUri;
             if (Uri.TryCreate(LicenseUrl, UriKind.Absolute, out tempUri))
             {
@@ -214,6 +238,10 @@ namespace NuGet.Build.Tasks
         private void ProcessJsonFile(PackageBuilder packageBuilder, string currentDirectory, string projectFileName, bool isHostProject)
         {
             string path = ProjectJsonPathUtilities.GetProjectConfigPath(currentDirectory, projectFileName);
+            if (!File.Exists(path))
+            {
+                return;
+            }
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
             {
                 var spec = JsonPackageSpecReader.GetPackageSpec(stream, packageBuilder.Id, path, null);
@@ -246,47 +274,51 @@ namespace NuGet.Build.Tasks
         {
             // This maps from source path on disk to target path inside the nupkg.
             var fileModel = new Dictionary<string, HashSet<string>>();
-            foreach (var packageFile in PackageFiles)
+            if (PackageFiles != null)
             {
-                string sourcePath = packageFile.GetMetadata("FullPath");
-                string targetPath = string.Empty;
-                var customMetadata = packageFile.CloneCustomMetadata();
-                if (customMetadata.Contains("MSBuildSourceProjectFile"))
+                foreach (var packageFile in PackageFiles)
                 {
-                    string sourceProjectFile = packageFile.GetMetadata("MSBuildSourceProjectFile");
-                    string identity = packageFile.GetMetadata("Identity");
-                    sourcePath = Path.Combine(sourceProjectFile.Replace(Path.GetFileName(sourceProjectFile), string.Empty), identity);
-                }
-                if (customMetadata.Contains("Pack"))
-                {
-                    string shouldPack = packageFile.GetMetadata("Pack");
-                    bool pack;
-                    Boolean.TryParse(shouldPack, out pack);
-                    if (!pack)
+                    string sourcePath = packageFile.GetMetadata("FullPath");
+                    string targetPath = string.Empty;
+                    var customMetadata = packageFile.CloneCustomMetadata();
+                    if (customMetadata.Contains("MSBuildSourceProjectFile"))
                     {
-                        continue;
+                        string sourceProjectFile = packageFile.GetMetadata("MSBuildSourceProjectFile");
+                        string identity = packageFile.GetMetadata("Identity");
+                        sourcePath = Path.Combine(sourceProjectFile.Replace(Path.GetFileName(sourceProjectFile), string.Empty), identity);
                     }
-                }
-                if (customMetadata.Contains("PackagePath"))
-                {
-                    targetPath = packageFile.GetMetadata("PackagePath");
-                }
+                    if (customMetadata.Contains("Pack"))
+                    {
+                        string shouldPack = packageFile.GetMetadata("Pack");
+                        bool pack;
+                        Boolean.TryParse(shouldPack, out pack);
+                        if (!pack)
+                        {
+                            continue;
+                        }
+                    }
+                    if (customMetadata.Contains("PackagePath"))
+                    {
+                        targetPath = packageFile.GetMetadata("PackagePath");
+                    }
 
-                if (fileModel.ContainsKey(sourcePath))
-                {
-                    var setOfTargetPaths = fileModel[sourcePath];
-                    if (!setOfTargetPaths.Contains(targetPath))
+                    if (fileModel.ContainsKey(sourcePath))
                     {
-                        setOfTargetPaths.Add(targetPath);
+                        var setOfTargetPaths = fileModel[sourcePath];
+                        if (!setOfTargetPaths.Contains(targetPath))
+                        {
+                            setOfTargetPaths.Add(targetPath);
+                        }
                     }
-                }
-                else
-                {
-                    var setOfTargetPaths = new HashSet<string>();
-                    setOfTargetPaths.Add(targetPath);
-                    fileModel.Add(sourcePath, setOfTargetPaths);
+                    else
+                    {
+                        var setOfTargetPaths = new HashSet<string>();
+                        setOfTargetPaths.Add(targetPath);
+                        fileModel.Add(sourcePath, setOfTargetPaths);
+                    }
                 }
             }
+
             return fileModel;
         }
     }

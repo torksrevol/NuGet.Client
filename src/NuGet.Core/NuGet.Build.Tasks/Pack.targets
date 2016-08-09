@@ -23,6 +23,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PackWhenReference Condition=" '$(PackWhenReference)' == '' ">true</PackWhenReference>
     <PackageOutputPath Condition=" '$(PackageOutputPath )' == '' ">$(TargetDir)</PackageOutputPath>
     <IncludeContentInPack Condition="'$(IncludeContentInPack)'==''">true</IncludeContentInPack>
+    <Description Condition="'$(Description)'==''">Description</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageFiles Include="@(Content)" Condition="'$(IncludeContentInPack)'=='true'" />
@@ -34,7 +35,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Main entry point for packing packages
     ============================================================
   -->
-  <Target Name="Pack" DependsOnTargets="_GetProjectToProjectReferences; _GetPackageFilesFromReferencedProjects">
+  <Target Name="Pack" DependsOnTargets="_GetProjectToProjectReferences; _GetPackageFilesFromReferencedProjects; _GetTargetPaths">
     <!-- Call Pack -->
     <PackTask PackItem="$(PackProjectInputFile)"
               PackageFiles="@(_PackageFiles)"
@@ -55,14 +56,21 @@ Copyright (c) .NET Foundation. All rights reserved.
               Exclude="$(Exclude)"
               OutputPath="$(OutputPath)"
               Configuration="$(Configuration)"
-              TargetPath="$(TargetPath)"
+              TargetPath="@(_TargetPath)"
+              TargetFrameworks="@(TargetFramework)"
               AssemblyName="$(AssemblyName)"
               ProjectReferences="@(_ProjectReferences)"
               PackageOutputPath="$(PackageOutputPath)"
               IncludeSymbols="$(IncludeSymbols)"
               IsTool="$(IsTool)"/>
   </Target>
-<!--
+
+  <Target Name="_GetTargetPaths">
+    <ItemGroup>
+      <_TargetPath Include="$(TargetDir)%(TargetFramework.Identity)\$(TargetFileName)"/>
+    </ItemGroup>
+  </Target>
+  <!--
     ============================================================
     _LoadPackGraphEntryPoints
     Find project entry points and load them into items.

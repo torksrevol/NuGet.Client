@@ -126,66 +126,79 @@ namespace NuGet.Commands
             else
             {
                 //TODO: throw a proper exception
-                throw new Exception("should have atleast one framework in project.json");
+                //throw new Exception("should have atleast one framework in project.json");
             }
 
             // Get the target file path
-            string targetPath = PackTargetArgs.TargetPath;
-
-            var allowedOutputExtensions = _allowedOutputExtensions;
-
-            if (IncludeSymbols)
+            
+            foreach (string targetPath in PackTargetArgs.TargetPath)
             {
-                // Include pdbs for symbol packages
-                allowedOutputExtensions = _allowedOutputExtensionsForSymbols;
-            }
+                var allowedOutputExtensions = _allowedOutputExtensions;
 
-            string projectOutputDirectory = Path.GetDirectoryName(targetPath);
-
-            string targetFileName = PackTargetArgs.AssemblyName;
-            IList<string> filesToCopy = GetFiles(projectOutputDirectory, targetFileName, allowedOutputExtensions, SearchOption.AllDirectories);
-
-            AddReferencedProjectsToOutputFiles(projectOutputDirectory, allowedOutputExtensions, filesToCopy);
-
-            // By default we add all files in the project's output directory
-            foreach (var file in filesToCopy)
-            {
-                string extension = Path.GetExtension(file);
-
-                // Only look at files we care about
-                if (!allowedOutputExtensions.Contains(extension))
+                if (IncludeSymbols)
                 {
-                    continue;
+                    // Include pdbs for symbol packages
+                    allowedOutputExtensions = _allowedOutputExtensionsForSymbols;
                 }
 
-                string targetFolder;
+                string projectOutputDirectory = Path.GetDirectoryName(targetPath);
 
-                if (IsTool)
+                string targetFileName = PackTargetArgs.AssemblyName;
+                IList<string> filesToCopy = GetFiles(projectOutputDirectory, targetFileName, allowedOutputExtensions, SearchOption.AllDirectories);
+
+                AddReferencedProjectsToOutputFiles(projectOutputDirectory, allowedOutputExtensions, filesToCopy);
+
+                // By default we add all files in the project's output directory
+                foreach (var file in filesToCopy)
                 {
-                    targetFolder = ToolsFolder;
-                }
-                else
-                {
-                    if (Directory.Exists(PackTargetArgs.TargetPath))
+                    string extension = Path.GetExtension(file);
+
+                    // Only look at files we care about
+                    if (!allowedOutputExtensions.Contains(extension))
                     {
-                        targetFolder = Path.Combine(ReferenceFolder, Path.GetDirectoryName(file.Replace(PackTargetArgs.TargetPath, string.Empty)));
+                        continue;
                     }
-                    else if (nugetFramework == null)
+
+                    string targetFolder;
+
+                    if (IsTool)
                     {
-                        targetFolder = ReferenceFolder;
+                        targetFolder = ToolsFolder;
                     }
                     else
                     {
-                        string shortFolderName = nugetFramework.GetShortFolderName();
-                        targetFolder = Path.Combine(ReferenceFolder, shortFolderName);
+                        if (Directory.Exists(targetPath))
+                        {
+                            // In the new MSBuild world, this should never happen, as TargetPath will always be a list of output DLLs.
+                            targetFolder = Path.Combine(ReferenceFolder, Path.GetDirectoryName(file.Replace(targetPath, string.Empty)));
+                        }
+                        else if (PackTargetArgs.TargetFrameworks.Count > 0)
+                        {
+                            //This should always execute in the new MSBuild world. This is the case where project.json is not being read,
+                            // therefore packagebuilder has no targetframeworks
+                            string frameworkName = Path.GetFileName(projectOutputDirectory);
+                            NuGetFramework folderNameAsNuGetFramework = NuGetFramework.Parse(frameworkName);
+                            string shortFolderName = string.Empty;
+                            if (PackTargetArgs.TargetFrameworks.Contains(folderNameAsNuGetFramework))
+                            {
+                                shortFolderName = folderNameAsNuGetFramework.GetShortFolderName();
+                            }
+                            targetFolder = Path.Combine(ReferenceFolder, shortFolderName);
+                        }
+                        else
+                        {
+                            // This is the fallback case of getting the target framework from project.json
+                            string shortFolderName = nugetFramework.GetShortFolderName();
+                            targetFolder = Path.Combine(ReferenceFolder, shortFolderName);
+                        }
                     }
+                    var packageFile = new Packaging.PhysicalPackageFile
+                    {
+                        SourcePath = file,
+                        TargetPath = Path.Combine(targetFolder, Path.GetFileName(file))
+                    };
+                    AddFileToBuilder(builder, packageFile);
                 }
-                var packageFile = new Packaging.PhysicalPackageFile
-                {
-                    SourcePath = file,
-                    TargetPath = Path.Combine(targetFolder, Path.GetFileName(file))
-                };
-                AddFileToBuilder(builder, packageFile);
             }
         }
 
