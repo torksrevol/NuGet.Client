@@ -200,10 +200,7 @@ namespace NuGet.CommandLine
                         Path.GetFullPath(Path.GetDirectoryName(TargetPath))));
             }
 
-            if (builder == null)
-            {
-                builder = new Packaging.PackageBuilder();
-            }
+            builder = new Packaging.PackageBuilder();
 
             try
             {

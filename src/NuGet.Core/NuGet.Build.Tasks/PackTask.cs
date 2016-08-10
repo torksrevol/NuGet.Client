@@ -17,7 +17,6 @@ namespace NuGet.Build.Tasks
 {
     public class PackTask : Microsoft.Build.Utilities.Task
     {
-        //TODO: Add support for Symbols
         //TODO: Add support for Tools
         [Required]
         public ITaskItem PackItem { get; set; }
@@ -49,6 +48,7 @@ namespace NuGet.Build.Tasks
         public string RepositoryUrl { get; set; }
         public string RepositoryType { get; set; }
         public ITaskItem[] ProjectReferences { get; set; }
+        public ITaskItem[] SourceFiles { get; set; }
         
 
 
@@ -96,6 +96,11 @@ namespace NuGet.Build.Tasks
                         packArgs.Properties.Add(property.Substring(0, index), property.Substring(index + 1));
                     }
                 }
+            }
+
+            if (IncludeSymbols)
+            {
+                packArgs.PackTargetArgs.SourceFiles = GetSourceFiles(packArgs.CurrentDirectory);
             }
 
             PackCommandRunner.SetupCurrentDirectory(packArgs);
@@ -370,5 +375,27 @@ namespace NuGet.Build.Tasks
             }
             return false;
         }
+
+        private IDictionary<string,string> GetSourceFiles(string currentProjectDirectory)
+        {
+            var sourceFiles = new Dictionary<string, string>();
+            if (SourceFiles != null)
+            {
+                foreach (var src in SourceFiles)
+                {
+                    var customMetadata = src.CloneCustomMetadata();
+                    var sourcePath = GetSourcePath(src, customMetadata);
+                    string sourceProjectFile = currentProjectDirectory;
+                    if (customMetadata.Contains("MSBuildSourceProjectFile"))
+                    {
+                        sourceProjectFile = src.GetMetadata("MSBuildSourceProjectFile");
+                        sourceProjectFile = Path.GetDirectoryName(sourceProjectFile);
+                    }
+
+                    sourceFiles.Add(sourcePath, sourceProjectFile);
+                }
+            }
+            return sourceFiles;
+        } 
     }
 }

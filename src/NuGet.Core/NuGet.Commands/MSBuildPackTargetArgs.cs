@@ -15,6 +15,7 @@ namespace NuGet.Commands
         public IEnumerable<ProjectToProjectReference>  ProjectReferences { get; set; }
         public Dictionary<string, HashSet<string>> ContentFiles { get; set; }
         public ISet<NuGetFramework> TargetFrameworks { get; set; }
+        public IDictionary<string, string> SourceFiles { get; set; } 
         
         public MSBuildPackTargetArgs()
         {

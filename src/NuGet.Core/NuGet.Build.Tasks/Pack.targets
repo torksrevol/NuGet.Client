@@ -35,7 +35,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Main entry point for packing packages
     ============================================================
   -->
-  <Target Name="Pack" DependsOnTargets="_GetProjectToProjectReferences; _GetPackageFilesFromReferencedProjects; _GetTargetPaths">
+  <Target Name="Pack" DependsOnTargets="_GetProjectToProjectReferences; _GetPackageFilesFromReferencedProjects; _GetSourceFilesForSymbols; _GetTargetPaths">
     <!-- Call Pack -->
     <PackTask PackItem="$(PackProjectInputFile)"
               PackageFiles="@(_PackageFiles)"
@@ -65,7 +65,8 @@ Copyright (c) .NET Foundation. All rights reserved.
               PackageTypes="@(PackageType)"
               IsTool="$(IsTool)"
               RepositoryUrl="$(Repository)"
-              RepositoryType="$(RepositoryType)"/>
+              RepositoryType="$(RepositoryType)"
+              SourceFiles="@(_SourceFiles)"/>
   </Target>
 
   <Target Name="_GetTargetPaths">
@@ -239,4 +240,75 @@ Copyright (c) .NET Foundation. All rights reserved.
           ItemName="_PackageFiles" />
     </MSBuild>
   </Target>
+
+  <!--
+    ============================================================
+    _GetSourceFilesForSymbols
+    Entry point for getting the source files for the project & it's references.
+    ============================================================
+  -->
+  <Target Name="_GetSourceFilesForSymbols" Condition="$(IncludeSymbols) == 'true'" DependsOnTargets="_LoadPackInputItems">
+
+    <!-- Validate -->
+    <Error Text="Could not find a csproj file" Condition="$(PackProjectInputFile) == ''"/>
+
+    <ItemGroup>
+      <_SourceFiles Include="@(Compile)"/>
+    </ItemGroup>
+    <!-- Walk the project references for each project -->
+    <MsBuild
+        Projects="$(PackProjectInputFile)"
+        Targets="_RecursivelyGetSourceFilesForSymbols"
+        BuildInParallel="false"
+        Properties="
+                %(_MSBuildProjectReferenceExistent.SetConfiguration);
+                %(_MSBuildProjectReferenceExistent.SetPlatform);
+                CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileFullPath);
+                BuildProjectReferences=false;"
+        RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_SourceFiles" />
+    </MsBuild>
+
+  </Target>
+
+  <!--
+    ============================================================
+    _WalkProjectToProjectReferences
+    Recursively walk project to project references
+    ============================================================
+  -->
+  <Target Name="_RecursivelyGetSourceFilesForSymbols"
+      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+      Returns="@(_SourceFiles)">
+
+    <ItemGroup>
+      <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
+      <ValidProjectInputForPackGraph Include="@(ProjectReference)"
+          Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
+    </ItemGroup>
+
+    <!-- Project to project entry -->
+    <ItemGroup>
+      <_SourceFiles Include="@(Compile)" Condition=" $(PackWhenReference) != 'true' " />
+    </ItemGroup>
+
+    <!-- Recurse into referenced projects -->
+    <MSBuild
+      Projects="@(ValidProjectInputForPackGraph)"
+      Targets="_RecursivelyGetSourceFilesForSymbols"
+      Properties="
+            %(_MSBuildProjectReferenceExistent.SetConfiguration);
+            %(_MSBuildProjectReferenceExistent.SetPlatform);
+            BuildProjectReferences=false"
+      RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
+
+      <Output
+          TaskParameter="TargetOutputs"
+          ItemName="_SourceFiles" />
+    </MSBuild>
+  </Target>
+  
 </Project>

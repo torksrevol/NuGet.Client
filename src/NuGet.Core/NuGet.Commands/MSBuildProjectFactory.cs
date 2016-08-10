@@ -93,19 +93,15 @@ namespace NuGet.Commands
         {
             // Add output files
             AddOutputFiles(builder);
-
-
+            
             // Add content files if there are any. They could come from a project or nuspec file
             AddContentFiles(builder);
-            //ApplyAction(p => p.AddFiles(builder, ContentItemType, ContentFolder));
 
             // Add sources if this is a symbol package
-            //if (IncludeSymbols)
-            //{
-            //    ApplyAction(p => p.AddFiles(builder, SourcesItemType, SourcesFolder));
-            //}
-
-            //ProcessDependencies(builder);
+            if (IncludeSymbols)
+            {
+                AddSourceFiles(builder);
+            }
             
             return builder;
         }
@@ -249,6 +245,39 @@ namespace NuGet.Commands
                     };
                     AddFileToBuilder(builder, packageFile);
                 }
+            }
+        }
+
+        private void AddSourceFiles(PackageBuilder builder)
+        {
+            foreach (var sourcePath in PackTargetArgs.SourceFiles.Keys)
+            {
+                var projectDirectory = PackTargetArgs.SourceFiles[sourcePath];
+                if (projectDirectory.EndsWith("\\"))
+                {
+                    projectDirectory = projectDirectory.Substring(0, projectDirectory.LastIndexOf("\\"));
+                }
+                var projectName = Path.GetFileName(projectDirectory);
+                string targetPath = Path.Combine(SourcesFolder, projectName);
+                if (sourcePath.Contains(projectDirectory))
+                {
+                    var relativePath = Path.GetDirectoryName(sourcePath).Replace(projectDirectory, string.Empty);
+                    if (relativePath.StartsWith("\\"))
+                    {
+                        relativePath = relativePath.Substring(1, relativePath.Length - 1);
+                    }
+                    if (relativePath.EndsWith("\\"))
+                    {
+                        relativePath = relativePath.Substring(0, relativePath.LastIndexOf("\\"));
+                    }
+                    targetPath = Path.Combine(targetPath, relativePath);
+                }
+                var packageFile = new PhysicalPackageFile()
+                {
+                    SourcePath = sourcePath,
+                    TargetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath))
+                };
+                AddFileToBuilder(builder, packageFile);
             }
         }
     }

@@ -712,7 +712,7 @@ namespace NuGet.Commands
             }
 
             factory.SetIncludeSymbols(true);
-            PackageBuilder symbolsBuilder = factory.CreateBuilder(_packArgs.BasePath, argsVersion, _packArgs.Suffix, buildIfNeeded: false);
+            PackageBuilder symbolsBuilder = factory.CreateBuilder(_packArgs.BasePath, argsVersion, _packArgs.Suffix, buildIfNeeded: false, builder:mainPackageBuilder);
             symbolsBuilder.Version = mainPackageBuilder.Version;
             symbolsBuilder.HasSnapshotVersion = mainPackageBuilder.HasSnapshotVersion;
 
