@@ -22,26 +22,22 @@ namespace NuGet.Build.Tasks
         public ITaskItem PackItem { get; set; }
         public ITaskItem[] PackageFiles { get; set; }
         public ITaskItem[] TargetFrameworks { get; set; }
-        public ITaskItem[] PackageTypes { get; set; }
+        public string[] PackageTypes { get; set; }
         public string PackageId { get; set; }
         public string PackageVersion { get; set; }
-        public string Authors { get; set; }
-        public string Owners { get; set; }
+        public string[] Authors { get; set; }
         public string Description { get; set; }
         public string Copyright { get; set; }
-        public string Summary { get; set; }
         public bool RequireLicenseAcceptance { get; set; }
         public string LicenseUrl { get; set; }
         public string ProjectUrl { get; set; }
         public string IconUrl { get; set; }
-        public string Tags { get; set; }
+        public string[] Tags { get; set; }
         public string ReleaseNotes { get; set; }
-        public string Properties { get; set; }
         public string Configuration { get; set; }
         public string OutputPath { get; set; }
         public string[] TargetPath { get; set; }
         public string AssemblyName { get; set; }
-        public string Exclude { get; set; }
         public string PackageOutputPath { get; set; }
         public bool IsTool { get; set; }
         public bool IncludeSymbols { get; set; }
@@ -49,7 +45,8 @@ namespace NuGet.Build.Tasks
         public string RepositoryType { get; set; }
         public ITaskItem[] ProjectReferences { get; set; }
         public ITaskItem[] SourceFiles { get; set; }
-        
+        public bool NoPackageAnalysis { get; set; }
+        public string MinClientVersion { get; set; }
 
 
         
@@ -76,27 +73,25 @@ namespace NuGet.Build.Tasks
             packArgs.OutputDirectory = PackageOutputPath;
             packArgs.Tool = IsTool;
             packArgs.Symbols = IncludeSymbols;
+            packArgs.NoPackageAnalysis = NoPackageAnalysis;
             packArgs.PackTargetArgs = new MSBuildPackTargetArgs()
             {
                 TargetPath = TargetPath,
                 Configuration = Configuration,
-                OutputPath = OutputPath,
                 AssemblyName = AssemblyName
             };
             packArgs.PackTargetArgs.TargetFrameworks = ParseFrameworks();
-            
-            InitCurrentDirectoryAndFileName(packArgs);
-            if (Properties != null)
+            if (MinClientVersion != null)
             {
-                foreach (var property in Properties.Split(';'))
+                Version version;
+                if (!Version.TryParse(MinClientVersion, out version))
                 {
-                    int index = property.IndexOf('=');
-                    if (index > 0 && index < property.Length - 1)
-                    {
-                        packArgs.Properties.Add(property.Substring(0, index), property.Substring(index + 1));
-                    }
+                    throw new ArgumentException("MinClientVersion is invalid");
                 }
+                packArgs.MinClientVersion = version;
             }
+
+            InitCurrentDirectoryAndFileName(packArgs);
 
             if (IncludeSymbols)
             {
@@ -135,24 +130,19 @@ namespace NuGet.Build.Tasks
             {
                 builder.Version = new NuGetVersion("1.0.0");
             }
-            if (Owners != null)
-            {
-                builder.Owners.AddRange(Owners?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
-            }
 
             if (Authors != null)
             {
-                builder.Authors.AddRange(Authors?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+                builder.Authors.AddRange(Authors);
             }
 
             if (Tags != null)
             {
-                builder.Tags.AddRange(Tags?.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+                builder.Tags.AddRange(Tags);
             }
 
             builder.Description = Description;
             builder.Copyright = Copyright;
-            builder.Summary = Summary;
             builder.ReleaseNotes = ReleaseNotes;
             Uri tempUri;
             if (Uri.TryCreate(LicenseUrl, UriKind.Absolute, out tempUri))
@@ -184,15 +174,15 @@ namespace NuGet.Build.Tasks
             {
                 foreach (var packageType in PackageTypes)
                 {
-                    var customMetadata = packageType.CloneCustomMetadata();
-                    string typeName = packageType.ItemSpec;
+                    string[] packageTypeSplitInPart = packageType.Split(new char[] {','});
+                    string packageTypeName = packageTypeSplitInPart[0];
                     var version = PackageType.EmptyVersion;
-                    if (customMetadata.Contains("Version"))
+                    if (packageTypeSplitInPart.Length > 1)
                     {
-                        string versionString = packageType.GetMetadata("Version");
+                        string versionString = packageTypeSplitInPart[1];
                         Version.TryParse(versionString, out version);
                     }
-                    listOfPackageTypes.Add(new PackageType(typeName, version));
+                    listOfPackageTypes.Add(new PackageType(packageTypeName, version));
                 }
             }
             return listOfPackageTypes;
@@ -251,13 +241,7 @@ namespace NuGet.Build.Tasks
                 packArgs.CurrentDirectory = Path.Combine(PackItem.GetMetadata("RootDir"), PackItem.GetMetadata("Directory"));
                 packArgs.Arguments = new string[] {string.Concat(PackItem.GetMetadata("FileName"), PackItem.GetMetadata("Extension"))};
                 packArgs.Path = PackItem.GetMetadata("FullPath");
-                var exclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (Exclude != null)
-                {
-                    exclude.AddRange(Exclude.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries));
-                }
-                
-                packArgs.Exclude = exclude;
+                packArgs.Exclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
         }
 

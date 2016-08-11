@@ -10,7 +10,6 @@ namespace NuGet.Commands
     {
         public string[] TargetPath { get; set; }
         public string AssemblyName { get; set; }
-        public string OutputPath { get; set; }
         public string Configuration { get; set; }
         public IEnumerable<ProjectToProjectReference>  ProjectReferences { get; set; }
         public Dictionary<string, HashSet<string>> ContentFiles { get; set; }

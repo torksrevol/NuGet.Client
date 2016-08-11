@@ -18,9 +18,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <PackageId Condition=" '$(PackageId)' == '' ">$(AssemblyName)</PackageId>
-    <PackageVersion Condition=" '$(PackageVersion)' == '' ">$(AssemblyInformationalVersion)</PackageVersion>
-    <PackageVersion Condition=" '$(PackageVersion)' == '' ">$(AssemblyVersion)</PackageVersion>
-    <PackWhenReference Condition=" '$(PackWhenReference)' == '' ">true</PackWhenReference>
+    <PackageVersion Condition=" '$(PackageVersion)' == '' ">$(Version)</PackageVersion>
     <PackageOutputPath Condition=" '$(PackageOutputPath )' == '' ">$(TargetDir)</PackageOutputPath>
     <IncludeContentInPack Condition="'$(IncludeContentInPack)'==''">true</IncludeContentInPack>
     <Description Condition="'$(Description)'==''">Description</Description>
@@ -42,19 +40,14 @@ Copyright (c) .NET Foundation. All rights reserved.
               PackageVersion="$(PackageVersion)"
               PackageId="$(PackageId)"
               Authors="$(Authors)"
-              Owners="$(Authors)"
               Description="$(Description)"
               Copyright="$(Copyright)"
-              Summary="$(Summary)"
-              RequireLicenseAcceptance="$(RequireLicenseAcceptance)"
-              LicenseUrl="$(LicenseUrl)"
-              ProjectUrl="$(ProjectUrl)"
-              IconUrl="$(IconUrl)"
-              ReleaseNotes="$(ReleaseNotes)"
-              Tags="$(Tags)"
-              Properties="$(Properties)"
-              Exclude="$(Exclude)"
-              OutputPath="$(OutputPath)"
+              RequireLicenseAcceptance="$(PackageRequireLicenseAcceptance)"
+              LicenseUrl="$(PackageLicenseUrl)"
+              ProjectUrl="$(PackageProjectUrl)"
+              IconUrl="$(PackageIconUrl)"
+              ReleaseNotes="$(PackageReleaseNotes)"
+              Tags="$(PackageTags)"
               Configuration="$(Configuration)"
               TargetPath="@(_TargetPath)"
               TargetFrameworks="@(TargetFramework)"
@@ -62,11 +55,13 @@ Copyright (c) .NET Foundation. All rights reserved.
               ProjectReferences="@(_ProjectReferences)"
               PackageOutputPath="$(PackageOutputPath)"
               IncludeSymbols="$(IncludeSymbols)"
-              PackageTypes="@(PackageType)"
+              PackageTypes="$(PackageType)"
               IsTool="$(IsTool)"
-              RepositoryUrl="$(Repository)"
+              RepositoryUrl="$(RepositoryUrl)"
               RepositoryType="$(RepositoryType)"
-              SourceFiles="@(_SourceFiles)"/>
+              SourceFiles="@(_SourceFiles)"
+              NoPackageAnalysis="$(NoPackageAnalysis)"
+              MinClientVersino="$(MinClientVersion)"/>
   </Target>
 
   <Target Name="_GetTargetPaths">
@@ -106,7 +101,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Walk the project references for each project -->
     <MsBuild
         Projects="$(PackProjectInputFile)"
-        Targets="_WalkProjectToProjectReferences"
+        Targets="_RecursivelyGetProjectToProjectReferences"
         BuildInParallel="false"
         Properties="
                 %(_MSBuildProjectReferenceExistent.SetConfiguration);
@@ -129,31 +124,32 @@ Copyright (c) .NET Foundation. All rights reserved.
     Recursively walk project to project references
     ============================================================
   -->
-  <Target Name="_WalkProjectToProjectReferences"
-      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+  <Target Name="_RecursivelyGetProjectToProjectReferences"
+      DependsOnTargets="ResolveProjectReferences"
       Returns="@(_ProjectReferences)">
 
-    <ItemGroup>
+    <ItemGroup Condition="$(PackGraphWriteEntryPoint) == 'true' OR $(IsPackage) == 'false'">
       <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
       <ValidProjectInputForPackGraph Include="@(ProjectReference)"
-          Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
+          Condition=" ('%(ProjectReference.ReferenceOutputAssembly)' == '' OR '%(ProjectReference.ReferenceOutputAssembly)' == 'true')" />
     </ItemGroup>
 
     <!-- Project to project entry -->
     <ItemGroup Condition = " '$(PackGraphWriteEntryPoint)' == 'false' ">
       <_ProjectReferences
-        Include="PROJECT|$(TargetPath)|$(AssemblyName)|$(MSBuildProjectFullPath)" Condition=" $(PackWhenReference) != 'true' " />
+        Include="PROJECT|$(TargetPath)|$(AssemblyName)|$(MSBuildProjectFullPath)" Condition=" $(IsPackage) == 'false' " />
       <_ProjectReferences
-        Include="PACKAGE|$(PackageId)|$(PackageVersion)" Condition=" $(PackWhenReference) == 'true' " />
+        Include="PACKAGE|$(PackageId)|$(PackageVersion)" Condition=" $(IsPackage) == 'true' OR $(IsPackage) == '' " />
     </ItemGroup>
 
     <!-- Recurse into referenced projects -->
     <MSBuild
       Projects="@(ValidProjectInputForPackGraph)"
-      Targets="_WalkProjectToProjectReferences"
+      Targets="_RecursivelyGetProjectToProjectReferences"
       Properties="
             %(_MSBuildProjectReferenceExistent.SetConfiguration);
             %(_MSBuildProjectReferenceExistent.SetPlatform);
+            IsPackage=%(ValidProjectInputForPackGraph.TreatAsPackageReference);
             PackGraphWriteEntryPoint=false;
             BuildProjectReferences=false"
       RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
@@ -190,6 +186,7 @@ Copyright (c) .NET Foundation. All rights reserved.
         Properties="
                 %(_MSBuildProjectReferenceExistent.SetConfiguration);
                 %(_MSBuildProjectReferenceExistent.SetPlatform);
+                IsPackage=false;
                 CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileFullPath);"
         RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
 
@@ -207,11 +204,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
   -->
   <Target Name="_RecursivelyGetPackageFilesFromReferencedProjects"
-      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+      DependsOnTargets="ResolveProjectReferences"
       Returns="@(_PackageFiles)">
 
     <Message Text="Currently in project : $(MSBuildProjectFullPath)" Importance="High"/>
-    <ItemGroup>
+    <ItemGroup Condition="$(IsPackage) == 'false'">
       <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
       <ValidProjectInputForPackGraph Include="@(ProjectReference)"
           Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
@@ -221,9 +218,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Include PackageFiles and Content of the project being packed -->
     <ItemGroup>
       <_PackageFiles
-        Include="@(PackageFiles)" Condition=" '$(PackWhenReference)' != 'true' " />
+        Include="@(PackageFiles)" Condition=" '$(IsPackage)' == 'false' " />
       <_PackageFiles
-        Include="@(Content)" Condition=" %(Content.Pack) != 'false' AND '$(PackWhenReference)' != 'true' " />
+        Include="@(Content)" Condition=" %(Content.Pack) != 'false' AND '$(IsPackage)' == 'false' " />
     </ItemGroup>
 
     <!-- Recurse into referenced projects -->
@@ -232,7 +229,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       Targets="_RecursivelyGetPackageFilesFromReferencedProjects"
       Properties="
             %(_MSBuildProjectReferenceExistent.SetConfiguration);
-            %(_MSBuildProjectReferenceExistent.SetPlatform);"
+            %(_MSBuildProjectReferenceExistent.SetPlatform);
+            IsPackage=%(ValidProjectInputForPackGraph.TreatAsPackageReference);
+            BuildProjectReferences=false;"
       RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
 
       <Output
@@ -252,9 +251,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Validate -->
     <Error Text="Could not find a csproj file" Condition="$(PackProjectInputFile) == ''"/>
 
-    <ItemGroup>
-      <_SourceFiles Include="@(Compile)"/>
-    </ItemGroup>
     <!-- Walk the project references for each project -->
     <MsBuild
         Projects="$(PackProjectInputFile)"
@@ -264,7 +260,8 @@ Copyright (c) .NET Foundation. All rights reserved.
                 %(_MSBuildProjectReferenceExistent.SetConfiguration);
                 %(_MSBuildProjectReferenceExistent.SetPlatform);
                 CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileFullPath);
-                BuildProjectReferences=false;"
+                BuildProjectReferences=false;
+                IsPackage=false;"
         RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
 
       <Output
@@ -276,15 +273,15 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!--
     ============================================================
-    _WalkProjectToProjectReferences
+    _RecursivelyGetSourceFilesForSymbols
     Recursively walk project to project references
     ============================================================
   -->
   <Target Name="_RecursivelyGetSourceFilesForSymbols"
-      DependsOnTargets="_SplitProjectReferencesByFileExistence"
+      DependsOnTargets="ResolveProjectReferences"
       Returns="@(_SourceFiles)">
 
-    <ItemGroup>
+    <ItemGroup Condition="$(IsPackage) == 'false'">
       <!-- Filter out project references that specify ReferenceOutputAssembly=false -->
       <ValidProjectInputForPackGraph Include="@(ProjectReference)"
           Condition=" %(ProjectReference.ReferenceOutputAssembly) == '' OR %(ProjectReference.ReferenceOutputAssembly) == 'true' " />
@@ -292,7 +289,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Project to project entry -->
     <ItemGroup>
-      <_SourceFiles Include="@(Compile)" Condition=" $(PackWhenReference) != 'true' " />
+      <_SourceFiles Include="@(Compile)" Condition=" $(IsPackage) == 'false' " />
     </ItemGroup>
 
     <!-- Recurse into referenced projects -->
@@ -302,7 +299,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       Properties="
             %(_MSBuildProjectReferenceExistent.SetConfiguration);
             %(_MSBuildProjectReferenceExistent.SetPlatform);
-            BuildProjectReferences=false"
+            BuildProjectReferences=false;
+            IsPackage=%(ValidProjectInputForPackGraph.TreatAsPackageReference);"
       RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)">
 
       <Output
