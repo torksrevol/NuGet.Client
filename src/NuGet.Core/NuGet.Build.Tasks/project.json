@@ -4,7 +4,8 @@
   "packOptions": {
     "files": {
       "mappings": {
-        "runtimes/any/native/NuGet.targets": "NuGet.targets"
+        "contentFiles/any/any/NuGet.targets": "NuGet.targets",
+        "contentFiles/any/any/Pack.targets": "Pack.targets"
       }
     }
   },
@@ -23,6 +24,9 @@
 
   "dependencies": {
     "NuGet.Commands": {
+      "target": "project"
+    },
+    "NuGet.Common": {
       "target": "project"
     }
   },
