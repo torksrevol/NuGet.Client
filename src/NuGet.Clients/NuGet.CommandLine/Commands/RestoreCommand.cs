@@ -677,6 +677,8 @@ namespace NuGet.CommandLine
 
         private void ProcessSolutionFile(string solutionFileFullPath, PackageRestoreInputs restoreInputs)
         {
+            Debugger.Launch();
+
             restoreInputs.DirectoryOfSolutionFile = Path.GetDirectoryName(solutionFileFullPath);
 
             // restore packages for the solution

@@ -309,11 +309,11 @@ Function Restore-SolutionPackages{
         $opts += $SolutionPath
     }
     if ($MSBuildVersion) {
-        $opts += '-MSBuildVersion', $MSBuildVersion
+        $opts += '-MSBuildVersion', "15.1"#$MSBuildVersion
     }
 
     if (-not $VerbosePreference) {
-        $opts += '-verbosity', 'quiet'
+        $opts += '-verbosity', 'detailed'
     }
 
     Trace-Log "Restoring packages @""$NuGetClientRoot"""
@@ -511,7 +511,7 @@ Function Test-MSBuildVersionPresent {
         [string]$MSBuildVersion
     )
 
-   	$MSBuildExe = Get-MSBuildExe $MSBuildVersion
+   	$MSBuildExe = "C:\Program Files (x86)\Microsoft Visual Studio 15.0\MSBuild\15.0\Bin\MSBuild.exe"#Get-MSBuildExe $MSBuildVersion
     $MSBuildExe -ne ""
 }
 

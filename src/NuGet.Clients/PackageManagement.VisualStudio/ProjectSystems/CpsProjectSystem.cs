@@ -46,10 +46,10 @@ namespace NuGet.PackageManagement.VisualStudio
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            await ProjectSystem.ProjectHelper.DoWorkInWriterLockAsync(
+/*            await ProjectSystem.ProjectHelper.DoWorkInWriterLockAsync(
                 EnvDTEProject,
                 VsHierarchyUtility.ToVsHierarchy(EnvDTEProject),
-                buildProject => MicrosoftBuildEvaluationProjectUtility.AddImportStatement(buildProject, relativeTargetPath, location));
+                buildProject => MicrosoftBuildEvaluationProjectUtility.AddImportStatement(buildProject, relativeTargetPath, location)); */
 
             // notify the project system of the change
             UpdateImportStamp(EnvDTEProject);
@@ -80,10 +80,10 @@ namespace NuGet.PackageManagement.VisualStudio
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            await ProjectSystem.ProjectHelper.DoWorkInWriterLockAsync(
+ /*           await ProjectSystem.ProjectHelper.DoWorkInWriterLockAsync(
                 EnvDTEProject,
                 VsHierarchyUtility.ToVsHierarchy(EnvDTEProject),
-                buildProject => MicrosoftBuildEvaluationProjectUtility.RemoveImportStatement(buildProject, relativeTargetPath));
+                buildProject => MicrosoftBuildEvaluationProjectUtility.RemoveImportStatement(buildProject, relativeTargetPath)); */
 
             // notify the project system of the change
             UpdateImportStamp(EnvDTEProject);

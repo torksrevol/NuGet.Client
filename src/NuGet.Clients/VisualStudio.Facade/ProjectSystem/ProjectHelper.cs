@@ -5,21 +5,21 @@ using System;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.ProjectSystem;
+//using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.Shell;
-using MsBuildProject = Microsoft.Build.Evaluation.Project;
+//using MsBuildProject = Microsoft.Build.Evaluation.Project;
 using Task = System.Threading.Tasks.Task;
 #if VS14
 using Microsoft.VisualStudio.ProjectSystem.Designers;
 #elif VS15
-using Microsoft.VisualStudio.ProjectSystem.Properties;
+//using Microsoft.VisualStudio.ProjectSystem.Properties;
 #endif
 
 namespace NuGet.VisualStudio.Facade.ProjectSystem
 {
     public static class ProjectHelper
     {
-        public static async Task DoWorkInWriterLockAsync(Project project, IVsHierarchy hierarchy, Action<MsBuildProject> action)
+/*        public static async Task DoWorkInWriterLockAsync(Project project, IVsHierarchy hierarchy, Action<MsBuildProject> action)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -48,9 +48,9 @@ namespace NuGet.VisualStudio.Facade.ProjectSystem
                     project.Save();
                 }
             }
-        }
+        }*/
 
-        private static UnconfiguredProject GetUnconfiguredProject(IVsProject project)
+ /*       private static UnconfiguredProject GetUnconfiguredProject(IVsProject project)
         {
             IVsBrowseObjectContext context = project as IVsBrowseObjectContext;
             if (context == null)
@@ -71,6 +71,6 @@ namespace NuGet.VisualStudio.Facade.ProjectSystem
             }
 
             return context != null ? context.UnconfiguredProject : null;
-        }
+        }*/
     }
 }
