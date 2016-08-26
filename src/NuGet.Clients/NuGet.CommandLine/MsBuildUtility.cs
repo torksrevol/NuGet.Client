@@ -402,10 +402,10 @@ namespace NuGet.CommandLine
 
                 // If version 15.1 is in the path,  we'll return that path here. When a public feed for the new VS15 installer tools 
                 // becomes available, we'll consume it in this code.
-                if (msbuildVersion.Major == 15 && msbuildVersion.Minor == 1)
+/*                if (msbuildVersion.Major == 15 && msbuildVersion.Minor == 1)
                 {
                     return msBuildExePath;
-                }
+                }*/
 
                 var toolset = SelectMsbuildToolset(msbuildVersion, installedToolsets);
 
@@ -434,20 +434,22 @@ namespace NuGet.CommandLine
             else
             {
                 // If version 15.1 is requested, we can only find it via the search path until discovery tools are publicly published.
-                if (userVersion.Equals("15.1"))
+/*                if (userVersion.Equals("15.1"))
                 {
                     string msBuildExePath;
                     var msbuildVersion = GetMSBuildVersionInPath(out msBuildExePath);
                     return msBuildExePath;
-                }
+                } */
 
-                // append ".0" if the userVersion is a number
+                // append ".0" if the userVersion is a whole number
                 string userVersionString = userVersion;
-                int unused;
-
-                if (int.TryParse(userVersion, out unused))
+                if (userVersionString.IndexOf('.') < 0)
                 {
-                    userVersionString = userVersion + ".0";
+                    int unused;
+                    if (int.TryParse(userVersion, out unused))
+                    {
+                        userVersionString = userVersion + ".0";
+                    }
                 }
 
                 Version ver;
