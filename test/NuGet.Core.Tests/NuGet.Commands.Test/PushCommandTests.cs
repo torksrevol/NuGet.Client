@@ -48,5 +48,35 @@ namespace NuGet.Commands.Test
                 Assert.Equal(true, File.Exists(destFile));
             }
         }
+
+        // Tests pushing to a source that is a v2 file system directory.
+        [Fact]
+        public void PushCommand_PushToV2FileSystemSource()
+        {
+            System.Diagnostics.Debugger.Launch();
+
+            var nugetexe = Util.GetNuGetExePath();
+
+            using (var packageDirectory = TestFileSystemUtility.CreateRandomTestFolder())
+            using (var source = TestFileSystemUtility.CreateRandomTestFolder())
+            {
+                // Arrange
+                var packageFileName = Util.CreateTestPackage("testPackage1", "1.1.0", packageDirectory);
+
+                // Act
+                string[] args = new string[] { "push", packageFileName, "-Source", source };
+                var result = CommandRunner.Run(
+                    nugetexe,
+                    Directory.GetCurrentDirectory(),
+                    string.Join(" ", args),
+                    true);
+
+                // Assert
+                Assert.Equal(0, result.Item1);
+                Assert.True(File.Exists(Path.Combine(source, "testPackage1.1.1.0.nupkg")));
+                var output = result.Item2;
+                Assert.DoesNotContain("WARNING: No API Key was provided", output);
+            }
+        }
     }
 }
