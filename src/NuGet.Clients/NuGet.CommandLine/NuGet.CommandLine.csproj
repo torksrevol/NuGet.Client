@@ -42,12 +42,12 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
-  <!--ItemGroup>
+  <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop">
-      <HintPath>$(EnlistmentRoot)\packages\Microsoft.VisualStudio.Setup.Configuration.Interop.1.2.143-develop-1996\lib\net35\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
+      <HintPath>$(EnlistmentRoot)\packages\Microsoft.VisualStudio.Setup.Configuration.Interop.1.1.142-preview4-29265\lib\net35\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-  </ItemGroup-->
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLineMachineWideSettings.cs" />
     <Compile Include="CommandLineParser.cs" />

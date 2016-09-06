@@ -13,7 +13,6 @@
 		<BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath( $(BaseIntermediateOutputPath) ))</BaseIntermediateOutputPath>
 
 		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-		<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
 
 		<OutputPath>$(ArtifactRoot)\$(MSBuildProjectName)\$(VisualStudioVersion)\$(Configuration)</OutputPath>
 		<OutputPath>$([System.IO.Path]::GetFullPath( $(OutputPath) ))\</OutputPath>

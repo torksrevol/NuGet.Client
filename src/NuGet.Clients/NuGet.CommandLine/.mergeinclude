@@ -2,7 +2,6 @@
 
 Microsoft.Build.dll
 Microsoft.Build.Framework.dll
-Microsoft.VisualStudio.Setup.Configuration.Interop.dll
 Microsoft.Web.XmlTransform.dll
 Newtonsoft.Json.dll
 NuGet.Client.dll

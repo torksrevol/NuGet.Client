@@ -311,7 +311,7 @@ Function Restore-SolutionPackages{
     }
 
     if (-not $VerbosePreference) {
-        $opts += '-verbosity', 'detailed'
+        $opts += '-verbosity', 'quiet'
     }
 
     Trace-Log "Restoring packages @""$NuGetClientRoot"""
@@ -535,9 +535,6 @@ Function Get-MSBuildExe {
     $MSBuild15Exe
 }
 
-Function Build-MSBuildInstanceFinder {
-}
-
 Function Build-ClientsProjects {
     [CmdletBinding()]
     param(
@@ -556,8 +553,16 @@ Function Build-ClientsProjects {
     }
 
     # Build the solution
+    $vsVersionOpt = "VisualStudioVersion="
+    if ($MSBuildVersion -eq "15.1") {
+        $vsVersionOpt += "15.0"
+    }
+    else {
+        $vsVersionOpt += "14.0"
+    }
+
     $opts = , $solutionPath
-    $opts += "/p:Configuration=$Configuration;ReleaseLabel=$ReleaseLabel;BuildNumber=$(Format-BuildNumber $BuildNumber)"
+    $opts += "/p:Configuration=$Configuration;ReleaseLabel=$ReleaseLabel;BuildNumber=$(Format-BuildNumber $BuildNumber);$vsVersionOpt"
     if (-not $VerbosePreference) {
         $opts += '/verbosity:minimal'
     }
