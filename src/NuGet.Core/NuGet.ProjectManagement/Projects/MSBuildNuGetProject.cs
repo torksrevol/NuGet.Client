@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
@@ -140,6 +142,10 @@ namespace NuGet.ProjectManagement
             {
                 throw new ArgumentException(Strings.PackageStreamShouldBeSeekable);
             }
+
+            var stopwatch = new Stopwatch();
+
+            stopwatch.Start();
 
             // Step-1: Check if the package already exists after setting the nuGetProjectContext
             MSBuildNuGetProjectSystem.SetNuGetProjectContext(nuGetProjectContext);
@@ -369,6 +375,9 @@ namespace NuGet.ProjectManagement
                     await MSBuildNuGetProjectSystem.ExecuteScriptAsync(packageIdentity, packageInstallPath, installPS1RelativePath, throwOnFailure: true);
                 }
             }
+
+            nuGetProjectContext.Log(MessageLevel.Debug, Strings.InstallationTime, packageIdentity, MSBuildNuGetProjectSystem.ProjectName, DatetimeUtility.ToReadableTimeFormat(stopwatch.Elapsed));
+
             return true;
         }
 

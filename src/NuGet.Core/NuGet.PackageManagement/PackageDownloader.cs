@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -217,6 +218,10 @@ namespace NuGet.PackageManagement
             token.ThrowIfCancellationRequested();
 
             DownloadResourceResult result;
+            var stopwatch = new Stopwatch();
+
+            stopwatch.Start();
+
             try
             {
                 result = await downloadResource.GetDownloadResourceResultAsync(
@@ -225,6 +230,8 @@ namespace NuGet.PackageManagement
                    globalPackagesFolder,
                    logger,
                    token);
+
+                stopwatch.Stop();
             }
             catch (OperationCanceledException)
             {
@@ -257,6 +264,8 @@ namespace NuGet.PackageManagement
                     packageIdentity,
                     sourceRepository.PackageSource.Source));
             }
+
+            logger.LogDebug(string.Format(CultureInfo.CurrentCulture, Strings.DownloadTime, packageIdentity, sourceRepository, DatetimeUtility.ToReadableTimeFormat(stopwatch.Elapsed)));
 
             if (result.PackageReader == null)
             {

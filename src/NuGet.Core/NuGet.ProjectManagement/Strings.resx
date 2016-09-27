@@ -195,11 +195,23 @@
   <data name="ErrorWritingPackagesConfig" xml:space="preserve">
     <value>An error occurred while writing file '{0}': {1}</value>
   </data>
+  <data name="ExtractionTime" xml:space="preserve">
+    <value>Extraction of package '{0}' to project '{1}' took {2}.</value>
+    <comment>{0} is the package ID
+{1} is the destination
+{2} is the duration</comment>
+  </data>
   <data name="FileConflictMessage" xml:space="preserve">
     <value>File '{0}' already exists in project '{1}'. Do you want to overwrite it?</value>
   </data>
   <data name="Info_OverwritingExistingFile" xml:space="preserve">
     <value>Overwriting existing file '{0}'..</value>
+  </data>
+  <data name="InstallationTime" xml:space="preserve">
+    <value>Installation of package '{0}' to project '{1}' took {2}.</value>
+    <comment>{0} is the package ID
+{1} is the project
+{2} is the duration</comment>
   </data>
   <data name="InvalidProjectName" xml:space="preserve">
     <value>Unable to determine the project name for '{0}'.</value>

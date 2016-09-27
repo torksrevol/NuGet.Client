@@ -335,4 +335,10 @@
   <data name="NoPackageUpdates" xml:space="preserve">
     <value>No package updates are available from the current package source for project '{0}'.</value>
   </data>
+  <data name="DownloadTime" xml:space="preserve">
+    <value>Download of package '{0}' from '{1}' took {2}.</value>
+    <comment>{0} is the package ID
+{1} is the source
+{2} is the duration</comment>
+  </data>
 </root>

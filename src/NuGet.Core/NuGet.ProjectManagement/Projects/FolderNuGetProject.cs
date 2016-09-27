@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -98,7 +99,11 @@ namespace NuGet.ProjectManagement
                         return Task.FromResult(false);
                     }
 
+                    var stopwatch = new Stopwatch();
+
                     nuGetProjectContext.Log(MessageLevel.Info, Strings.AddingPackageToFolder, packageIdentity, Path.GetFullPath(Root));
+
+                    stopwatch.Start();
 
                     // 3. Call PackageExtractor to extract the package into the root directory of this FileSystemNuGetProject
                     downloadResourceResult.PackageStream.Seek(0, SeekOrigin.Begin);
@@ -137,6 +142,9 @@ namespace NuGet.ProjectManagement
                     // Pend all the package files including the nupkg file
                     FileSystemUtility.PendAddFiles(addedPackageFilesList, Root, nuGetProjectContext);
 
+                    stopwatch.Stop();
+
+                    nuGetProjectContext.Log(MessageLevel.Debug, Strings.ExtractionTime, packageIdentity, Path.GetFullPath(Root), DatetimeUtility.ToReadableTimeFormat(stopwatch.Elapsed));
                     nuGetProjectContext.Log(MessageLevel.Info, Strings.AddedPackageToFolder, packageIdentity, Path.GetFullPath(Root));
 
                     // Extra logging with source for verbosity detailed
