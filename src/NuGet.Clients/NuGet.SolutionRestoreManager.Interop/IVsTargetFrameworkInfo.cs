@@ -3,30 +3,29 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Collections.Immutable;
 
 namespace NuGet.SolutionRestoreManager
 {
     /// <summary>
-    /// Contains target framework metadata needed for restore operation
+    /// Contains target framework metadata needed for restore operation.
     /// </summary>
     [ComImport]
     [Guid("9a1e969a-3e1e-4764-a48b-b823fe716fab")]
     public interface IVsTargetFrameworkInfo
     {
         /// <summary>
-        /// Friendly project name.
+        /// Target framework name in full format.
         /// </summary>
         string TargetFrameworkMoniker { get; }
 
         /// <summary>
-        /// Project references metadata
+        /// Collection of project references.
         /// </summary>
-        IImmutableDictionary<string, IImmutableDictionary<string, string>> ProjectReferences { get; }
+        IVsReferenceItems ProjectReferences { get; }
 
         /// <summary>
-        /// Package references metadata
+        /// Collection of package references.
         /// </summary>
-        IImmutableDictionary<string, IImmutableDictionary<string, string>> PackageReferences { get; }
+        IVsReferenceItems PackageReferences { get; }
     }
 }

@@ -9,21 +9,31 @@ using System.Threading.Tasks;
 namespace NuGet.SolutionRestoreManager
 {
     /// <summary>
-    /// Represents a package restore contract for integration with a project system.
+    /// Represents a package restore service API for integration with a project system.
     /// </summary>
     [ComImport]
     [Guid("2b046428-ca39-40bb-8b4b-7dd1d96118cb")]
     public interface IVsSolutionRestoreService
     {
         /// <summary>
-        /// This property will tell if last/current restore was a success or a failure
+        /// A task providing last/current restore operation status. 
+        /// If the restore is in-progress task will be not completed.
+        /// CPS will rely on the task completion status to block solution build.
         /// </summary>
         Task<bool> CurrentRestoreOperation { get; }
 
         /// <summary>
-        /// Returns if the requested nuget restore operation for the given project was a success
-        /// or failure
+        /// An entry point used by CPS to indicate given project needs to be restored.
         /// </summary>
+        /// <param name="projectUniqueName">
+        /// Unique identificator of the project. Should be a full path to project file.
+        /// </param>
+        /// <param name="projectRestoreInfo">Metadata <see cref="IVsProjectRestoreInfo"/> needed for restoring the project.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>
+        /// Returns if the requested nuget restore operation for the given project 
+        /// was a success or failure.
+        /// </returns>
         Task<bool> NominateProjectAsync(string projectUniqueName, IVsProjectRestoreInfo projectRestoreInfo, CancellationToken token);
     }
 }

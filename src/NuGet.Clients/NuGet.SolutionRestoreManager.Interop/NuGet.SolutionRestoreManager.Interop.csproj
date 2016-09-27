@@ -16,22 +16,43 @@
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <DocumentationFile>$(OutputPath)\NuGet.VisualStudio.SolutionRestoreManager.XML</DocumentationFile>
+    <DocumentationFile>$(OutputPath)\NuGet.SolutionRestoreManager.Interop.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="install.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="install.ps1" />
     <None Include="NuGet.SolutionRestoreManager.Interop.nuspec" />
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IVsProjectRestoreInfo.cs" />
+    <Compile Include="IVsReferenceItem.cs" />
+    <Compile Include="IVsReferenceProperties.cs" />
+    <Compile Include="IVsReferenceProperty.cs" />
+    <Compile Include="IVsReferenceItems.cs" />
     <Compile Include="IVsSolutionRestoreService.cs" />
     <Compile Include="IVsTargetFrameworkInfo.cs" />
+    <Compile Include="IVsTargetFrameworks.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(EnlistmentRoot)\build\common.targets" />
   <Import Project="$(EnlistmentRoot)\build\sign.targets" />
+  <Target Name="Publish" AfterTargets="Build">
+    <PropertyGroup>
+      <NuGetExe>$(EnlistmentRoot)\.nuget\nuget.exe</NuGetExe>
+      <PackageVersion>$(SemanticVersion)$(PreReleaseInformationVersion)</PackageVersion>
+      <PublishDestination>$(EnlistmentRoot)\Nupkgs</PublishDestination>
+    </PropertyGroup>
+    <ItemGroup>
+      <Nuspec Include="*.nuspec" />
+      <PackageInclude Include="install.ps1" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="%(PackageInclude.Identity)"
+      DestinationFolder="$(TargetDir)" />
+    <Exec
+      Command="$(NuGetExe) pack %(Nuspec.Identity) -Version $(PackageVersion) -BasePath $(TargetDir) -OutputDirectory $(PublishDestination) -Verbosity detailed" />
+  </Target>
 </Project>

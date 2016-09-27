@@ -7,20 +7,20 @@ using System.Runtime.InteropServices;
 namespace NuGet.SolutionRestoreManager
 {
     /// <summary>
-    /// Contains project metadata needed for project restore operation.
+    /// Represents a property as a key-value pair
     /// </summary>
     [ComImport]
-    [Guid("ab43992d-b977-436d-84c2-e76aeed20de2")]
-    public interface IVsProjectRestoreInfo
+    [Guid("1513778e-10b7-411e-a4d4-58dcbe51a9a5")]
+    public interface IVsReferenceProperty
     {
         /// <summary>
-        /// Base intermediate path of the project.
+        /// Property name.
         /// </summary>
-        string BaseIntermediatePath { get; }
+        string Name { get; }
 
         /// <summary>
-        /// Target frameworks metadata.
+        /// Property value.
         /// </summary>
-        IVsTargetFrameworks TargetFrameworks { get; }
+        string Value { get; }
     }
 }
