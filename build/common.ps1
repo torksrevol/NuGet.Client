@@ -8,16 +8,11 @@ $DefaultMSBuildVersion = 15
 $PackageReleaseVersion = "3.6.0"
 
 $NuGetClientRoot = Split-Path -Path $PSScriptRoot -Parent
-
-# allow this to work for scripts/funcTests
-if ((Split-Path -Path $PSScriptRoot -Leaf) -eq "scripts") {
-    $NuGetClientRoot = Split-Path -Path $NuGetClientRoot -Parent
-}
-
-$CLIRoot = Join-Path $NuGetClientRoot 'cli'
+$CLIRoot = Join-Path $NuGetClientRoot cli
 $Nupkgs = Join-Path $NuGetClientRoot nupkgs
 $Artifacts = Join-Path $NuGetClientRoot artifacts
 $ReleaseNupkgs = Join-Path $Artifacts ReleaseNupkgs
+$ConfigureJson = Join-Path $Artifacts configure.json
 
 $DotNetExe = Join-Path $CLIRoot 'dotnet.exe'
 $NuGetExe = Join-Path $NuGetClientRoot '.nuget\nuget.exe'
@@ -68,7 +63,7 @@ Function Error-Log {
         Write-Error "[$(Trace-Time)]`t$ErrorMessage"
     }
     else {
-        Write-Error "[$(Trace-Time)]`t$ErrorMessage" -ErrorAction Stop
+        Write-Error "[$(Trace-Time)]`t[FATAL] $ErrorMessage" -ErrorAction Stop
     }
 }
 
@@ -170,11 +165,12 @@ Function Install-NuGet {
     param(
         [switch]$Force
     )
-
     if ($Force -or -not (Test-Path $NuGetExe)) {
         Trace-Log 'Downloading nuget.exe'
         wget https://dist.nuget.org/win-x86-commandline/latest-prerelease/nuget.exe -OutFile $NuGetExe
     }
+
+    & $NuGetExe locals all -list -verbosity detailed
 }
 
 Function Install-DotnetCLI {
@@ -182,7 +178,6 @@ Function Install-DotnetCLI {
     param(
         [switch]$Force
     )
-
     $env:DOTNET_HOME=$CLIRoot
     $env:DOTNET_INSTALL_DIR=$NuGetClientRoot
 
@@ -257,26 +252,44 @@ Function Test-MSBuildVersionPresent {
     Test-Path $MSBuildExe
 }
 
-$MSBuildExe = Get-MSBuildExe
-Set-Alias msbuild $MSBuildExe
+#$MSBuildExe = Get-MSBuildExe
+#Set-Alias msbuild $MSBuildExe
 
-$VS14Installed = Test-MSBuildVersionPresent -MSBuildVersion 14
-$VS15Installed = Test-MSBuildVersionPresent -MSBuildVersion 15
-
-function Test-BuildEnvironment {
+Function Test-BuildEnvironment {
     param(
         [switch]$CI
     )
+    if (-not (Test-Path $ConfigureJson)) {
+        Error-Log 'Build environment is not configured. Please run configure.ps1 first.' -Fatal
+    }
+
     $Installed = (Test-Path $DotNetExe) -and (Test-Path $NuGetExe)
     if (-not $Installed) {
         Error-Log 'Build environment is not configured. Please run configure.ps1 first.' -Fatal
     }
+
+    $script:ConfigureObject = Get-Content $ConfigureJson -Raw | ConvertFrom-Json
+    Set-Variable MSBuildExe -Value $ConfigureObject.BuildTools.MSBuildExe -Scope Script -Force
+    Set-Alias msbuild $script:MSBuildExe -Scope Script -Force
+    Set-Variable BuildToolsets -Value $ConfigureObject.Toolsets -Scope Script -Force
+
+    $script:VS14Installed = ($BuildToolsets | where vs14 -ne $null)
+    $script:VS15Installed = ($BuildToolsets | where vs15 -ne $null)
+
+    $ConfigureObject |
+         select -expand envvars |
+         %{ $_.psobject.properties } |
+         %{ Set-Item -Path "env:$($_.Name)" -Value $_.Value }
 
     if ($CI) {
         # Explicitly add cli to environment PATH
         # because dotnet-install script runs in configure.ps1 in previous build step
         $env:path = "$CLIRoot;${env:path}"
     }
+}
+
+Function Use-BuildToolset {
+    param([int]$ToolsetVersion)
 }
 
 function Enable-DelaySigningForDotNet {
@@ -311,7 +324,7 @@ function Enable-DelaySigningForDotNet {
 
 Function Save-ProjectFile ($xproject, $fileName) {
     Trace-Log "Saving project to '$fileName'"
-    $xproject | ConvertTo-Json -Depth 100 | Out-File $fileName
+    $xproject | ConvertTo-Json -Depth 99 | Out-File $fileName
 }
 
 # Enables delay signed build
@@ -376,7 +389,7 @@ Function Clear-Artifacts {
     param()
     if( Test-Path $Artifacts) {
         Trace-Log 'Cleaning the Artifacts folder'
-        Remove-Item $Artifacts\* -Recurse -Force
+        Remove-Item $Artifacts\* -Recurse -Force -Exclude 'configure.json'
     }
 }
 

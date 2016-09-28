@@ -34,9 +34,10 @@ namespace NuGet.PackageManagement.VisualStudio
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly uint _solutionLoadedUICookie;
         private readonly IVsSolution _vsSolution;
-        private readonly NuGetAndEnvDTEProjectCache _nuGetAndEnvDTEProjectCache = new NuGetAndEnvDTEProjectCache();
+        private readonly IProjectSystemCache _nuGetAndEnvDTEProjectCache;
 
         private bool _initialized;
+        private bool _cacheInitialized;
 
         //add solutionOpenedRasied to make sure ProjectRename and ProjectAdded event happen after solutionOpened event
         private bool _solutionOpenedRaised;
@@ -82,8 +83,16 @@ namespace NuGet.PackageManagement.VisualStudio
 
         public event EventHandler<ActionsExecutedEventArgs> ActionsExecuted;
 
-        public VSSolutionManager()
+        [ImportingConstructor]
+        public VSSolutionManager(IProjectSystemCache projectSystemCache)
         {
+            if (projectSystemCache == null)
+            {
+                throw new ArgumentNullException(nameof(projectSystemCache));
+            }
+
+            _nuGetAndEnvDTEProjectCache = projectSystemCache;
+
             _dte = ServiceLocator.GetInstance<DTE>();
             _vsSolution = ServiceLocator.GetGlobalService<SVsSolution, IVsSolution>();
             _vsMonitorSelection = ServiceLocator.GetGlobalService<SVsShellMonitorSelection, IVsMonitorSelection>();
@@ -519,7 +528,7 @@ namespace NuGet.PackageManagement.VisualStudio
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (!_nuGetAndEnvDTEProjectCache.IsInitialized && IsSolutionOpen)
+            if (!_cacheInitialized && IsSolutionOpen)
             {
                 try
                 {
@@ -543,7 +552,7 @@ namespace NuGet.PackageManagement.VisualStudio
                         }
 
                         // Consider that the cache is initialized only when there are any projects to add.
-                        _nuGetAndEnvDTEProjectCache.IsInitialized = true;
+                        _cacheInitialized = true;
                     }
 
                     SetDefaultProjectName();
@@ -648,7 +657,7 @@ namespace NuGet.PackageManagement.VisualStudio
                     // Check if the cache is initialized.
                     // It is possible that the cache is not initialized, since,
                     // the solution was not saved and/or there were no projects in the solution
-                    if (!_nuGetAndEnvDTEProjectCache.IsInitialized && _solutionOpenedRaised)
+                    if (!_cacheInitialized && _solutionOpenedRaised)
                     {
                         ThreadHelper.JoinableTaskFactory.Run(async delegate
                         {

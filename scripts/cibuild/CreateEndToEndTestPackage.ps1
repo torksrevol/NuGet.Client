@@ -48,6 +48,9 @@ $opts = '/s', '/z', '/r:3', '/w:30', '/np', '/nfl'
 if ($VerbosePreference) {
     $opts += '/v'
 }
+else {
+    $opts += '/ndl'
+}
 
 try {
     $TestSource = Join-Path $NuGetRoot test\EndToEnd -Resolve

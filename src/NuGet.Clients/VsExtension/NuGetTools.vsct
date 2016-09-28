@@ -200,7 +200,58 @@
     </CommandPlacement>
   </CommandPlacements>
 
+  <!--The Commands section is where commands, menus, and menu groups are defined.
+      This section uses a Guid to identify the package that provides the command defined inside it. -->
+  <Commands package="guidRestoreManagerPackage">
+    <!-- Inside this section we have different sub-sections: one for the menus, another
+    for the menu groups, one for the buttons (the actual commands), one for the combos
+    and the last one for the bitmaps used. Each element is identified by a command id that
+    is a unique pair of guid and numeric identifier; the guid part of the identifier is usually
+    called "command set" and is used to group different command inside a logically related
+    group; your package should define its own command set in order to avoid collisions
+    with command ids defined by other packages. -->
+
+    <!-- In this section you can define new menu groups. A menu group is a container for
+         other menus or buttons (commands); from a visual point of view you can see the
+         group as the part of a menu contained between two lines. The parent of a group
+         must be a menu. -->
+    <Groups>
+      <Group guid="guidRestoreManagerPackageCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+    </Groups>
+
+    <!--Buttons section. -->
+    <!--This section defines the elements the user can interact with, like a menu command or a button
+        or combo box in a toolbar. -->
+    <Buttons>
+      <!--To define a menu group you have to specify its ID, the parent menu and its display priority.
+          The command is visible and enabled by default. If you need to change the visibility, status, etc, you can use
+          the CommandFlag node.
+          You can add more than one CommandFlag node e.g.:
+              <CommandFlag>DefaultInvisible</CommandFlag>
+              <CommandFlag>DynamicVisibility</CommandFlag>
+          If you do not want an image next to your command, remove the Icon node /> -->
+      <Button guid="guidRestoreManagerPackageCmdSet" id="NominateProjectId" priority="0x0100" type="Button">
+        <Parent guid="guidRestoreManagerPackageCmdSet" id="MyMenuGroup" />
+        <Strings>
+          <CommandName>NominateProjectId</CommandName>
+          <ButtonText>Invoke NominateProject</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
   <Symbols>
+    <!-- This is the package guid. -->
+    <GuidSymbol name="guidRestoreManagerPackage" value="{2b52ac92-4551-426d-bd34-c6d7d9fdd1c5}" />
+
+    <!-- This is the guid used to group the menu commands together -->
+    <GuidSymbol name="guidRestoreManagerPackageCmdSet" value="{ff3f79db-6281-4f6c-abd0-079f9d49c962}">
+      <IDSymbol name="MyMenuGroup" value="0x1020" />
+      <IDSymbol name="NominateProjectId" value="0x0100" />
+    </GuidSymbol>
+    
     <GuidSymbol name="guidPowerConsolePkg" value="{5fcc8577-4feb-4d04-ad72-d6c629b083cc}" />
     <GuidSymbol name="guidPowerConsoleCmdSet" value="{1E8A55F6-C18D-407F-91C8-94B02AE1CED6}">
       <IDSymbol name="idToolbar" value="0x1010"/>

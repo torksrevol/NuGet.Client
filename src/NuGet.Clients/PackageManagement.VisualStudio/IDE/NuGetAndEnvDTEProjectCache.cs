@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using NuGet.ProjectManagement;
 using EnvDTEProject = EnvDTE.Project;
@@ -15,7 +16,9 @@ namespace NuGet.PackageManagement.VisualStudio
     /// Projects are added from the main thread, on solution opened event, so concurrent dictionaries are not
     /// needed
     /// </summary>
-    internal class NuGetAndEnvDTEProjectCache
+    [PartCreationPolicy(CreationPolicy.Shared)]
+    [Export(typeof(IProjectSystemCache))]
+    internal class NuGetAndEnvDTEProjectCache : IProjectSystemCache
     {
         private readonly Dictionary<EnvDTEProjectName, NuGetProject> _nuGetProjectCache = new Dictionary<EnvDTEProjectName, NuGetProject>();
 

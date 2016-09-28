@@ -11,7 +11,7 @@ namespace NuGet.PackageManagement.VisualStudio
     /// <summary>
     /// Represents a project name in the solution manager.
     /// </summary>
-    internal class EnvDTEProjectName : IEquatable<EnvDTEProjectName>
+    public class EnvDTEProjectName : IEquatable<EnvDTEProjectName>
     {
         public EnvDTEProjectName(EnvDTEProject envDTEProject)
         {
