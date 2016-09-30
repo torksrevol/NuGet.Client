@@ -14,9 +14,7 @@
     "Microsoft.VisualStudio.Text.UI": "15.0.25123-Dev15Preview",
     "Microsoft.VisualStudio.Text.UI.Wpf": "15.0.25123-Dev15Preview",
     "Microsoft.VisualStudio.Threading": "15.0.20-pre",
-    "Microsoft.VSSDK.BuildTools": "15.0.25604-Preview4",
-    "Microsoft.Build": "14.3.0-prerelease02",
-    "Microsoft.Build.Framework": "14.3.0-prerelease02"
+    "Microsoft.VSSDK.BuildTools": "15.0.25604-Preview4"
   },
   "frameworks": {
     "net462": {}
